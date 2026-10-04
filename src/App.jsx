@@ -22,6 +22,13 @@ import DoctorProfileScreen from './pages/patient/DoctorProfileScreen';
 import BookAppointmentScreen from './pages/patient/BookAppointmentScreen';
 import AppointmentConfirmationScreen from './pages/patient/AppointmentConfirmationScreen';
 
+// Remaining Patient Screens (Stage 2)
+import MedicalRecordsScreen from './pages/patient/MedicalRecordsScreen';
+import PrescriptionsScreen from './pages/patient/PrescriptionsScreen';
+import EmergencyScreen from './pages/patient/EmergencyScreen';
+import BillsScreen from './pages/patient/BillsScreen';
+import PatientProfileScreen from './pages/patient/PatientProfileScreen';
+
 function App() {
   return (
     <AuthProvider>
@@ -57,6 +64,13 @@ function App() {
           <Route path="/doctors/:id" element={<DoctorProfileScreen />} />
           <Route path="/appointments/book/:doctorId" element={<BookAppointmentScreen />} />
           <Route path="/appointments/confirmation" element={<AppointmentConfirmationScreen />} />
+
+          {/* Remaining Patient Routes (Stage 2) */}
+          <Route path="/records" element={<MedicalRecordsScreen />} />
+          <Route path="/prescriptions" element={<PrescriptionsScreen />} />
+          <Route path="/emergency" element={<EmergencyScreen />} />
+          <Route path="/bills" element={<BillsScreen />} />
+          <Route path="/profile" element={<PatientProfileScreen />} />
 
           {/* Backend Placeholder Dashboards */}
           <Route path="/dashboard/doctor" element={<DoctorDashboardPlaceholder />} />
