@@ -1,4 +1,4 @@
-import apiClient from './api';
+import apiClient from "./api";
 
 /**
  * Patient Service
@@ -7,27 +7,24 @@ import apiClient from './api';
 export const patientService = {
   // GET /api/patients/
   getPatients: async (params = {}) => {
-    const response = await apiClient.get('/api/patients/', { params });
+    const response = await apiClient.get("/api/patients/", { params });
     return response.data;
   },
 
   // GET /api/patients/my-profile/
   getMyProfile: async () => {
-    const response = await apiClient.get('/api/patients/my-profile/');
-    return response.data;
-  },
-
-  // POST /api/patients/profile/
-  // TODO: Awaiting backend payload schema
-  createProfile: async (payload) => {
-    const response = await apiClient.post('/api/patients/profile/', payload);
+    const response = await apiClient.get("/api/patients/my-profile/");
     return response.data;
   },
 
   // PUT /api/patients/profile/
-  // TODO: Awaiting backend payload schema
-  updateProfile: async (payload) => {
-    const response = await apiClient.put('/api/patients/profile/', payload);
+  // Partial update is supported by the backend.
+  updateMyProfile: async (payload) => {
+    const response = await apiClient.put(
+      "/api/patients/profile/",
+      payload
+    );
+
     return response.data;
   },
 

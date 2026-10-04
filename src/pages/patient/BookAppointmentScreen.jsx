@@ -10,104 +10,310 @@ import CalendarWidget from '../../components/booking/CalendarWidget';
 import TimeSlotGrid from '../../components/booking/TimeSlotGrid';
 import ConsultationTypeRadio from '../../components/booking/ConsultationTypeRadio';
 import PrimaryButton from '../../components/common/PrimaryButton';
-import InputField from '../../components/common/InputField';
 import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { doctorService } from '../../services/doctorService';
 import { appointmentService } from '../../services/appointmentService';
-import { useAuth } from '../../context/AuthContext';
 import { getDoctorAvatar } from '../../utils/doctorAvatar';
+
+const formatAppointmentDate = (day, month, year) => {
+  const monthMap = {
+    January: '01',
+    February: '02',
+    March: '03',
+    April: '04',
+    May: '05',
+    June: '06',
+    July: '07',
+    August: '08',
+    September: '09',
+    October: '10',
+    November: '11',
+    December: '12',
+  };
+
+  const monthNumber = monthMap[month];
+
+  if (!monthNumber || !day || !year) {
+    return null;
+  }
+
+  return `${year}-${monthNumber}-${String(day).padStart(2, '0')}`;
+};
+
+const formatAppointmentTime = (time) => {
+  if (!time) return null;
+
+  /*
+   * Backend expects:
+   * HH:MM:SS
+   *
+   * UI may provide:
+   * 10:30 AM
+   * 04:30 PM
+   * 10:30
+   */
+
+  const normalizedTime = String(time).trim();
+
+  if (/^\d{2}:\d{2}:\d{2}$/.test(normalizedTime)) {
+    return normalizedTime;
+  }
+
+  const twelveHourMatch = normalizedTime.match(
+    /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i
+  );
+
+  if (twelveHourMatch) {
+    let hours = Number(twelveHourMatch[1]);
+    const minutes = twelveHourMatch[2];
+    const period = twelveHourMatch[3].toUpperCase();
+
+    if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+
+    if (period === 'PM' && hours !== 12) {
+      hours += 12;
+    }
+
+    return `${String(hours).padStart(2, '0')}:${minutes}:00`;
+  }
+
+  const twentyFourHourMatch = normalizedTime.match(
+    /^(\d{1,2}):(\d{2})$/
+  );
+
+  if (twentyFourHourMatch) {
+    return `${String(Number(twentyFourHourMatch[1])).padStart(
+      2,
+      '0'
+    )}:${twentyFourHourMatch[2]}:00`;
+  }
+
+  return null;
+};
+
+const extractBackendError = (err) => {
+  const data = err?.response?.data;
+
+  if (!data) {
+    return err?.message || 'Unable to create the appointment.';
+  }
+
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (data.detail) {
+    return data.detail;
+  }
+
+  if (data.message) {
+    return data.message;
+  }
+
+  if (typeof data === 'object') {
+    const fieldErrors = Object.entries(data)
+      .map(([field, errors]) => {
+        const message = Array.isArray(errors)
+          ? errors.join(', ')
+          : String(errors);
+
+        return `${field}: ${message}`;
+      })
+      .join(' | ');
+
+    if (fieldErrors) {
+      return fieldErrors;
+    }
+  }
+
+  return 'Unable to create the appointment. Please try again.';
+};
 
 export const BookAppointmentScreen = () => {
   const { doctorId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
 
-  const preselectedSlot = searchParams.get('slot') || '11:00 AM';
+  const preselectedSlot = searchParams.get('slot') || '';
 
   const [doctor, setDoctor] = useState(null);
   const [loadingDoctor, setLoadingDoctor] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
-  // Booking Form State
-  const [consultationType, setConsultationType] = useState('in-person');
-  const [selectedDay, setSelectedDay] = useState(28);
-  const [selectedMonth, setSelectedMonth] = useState('September');
-  const [selectedYear, setSelectedYear] = useState(2026);
-  const [selectedSlot, setSelectedSlot] = useState(preselectedSlot);
-  const [patientName, setPatientName] = useState([user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.name || '');
-  const [patientPhone, setPatientPhone] = useState(user?.phone || user?.mobile || '');
-  const [symptoms, setSymptoms] = useState('');
+  const [consultationType, setConsultationType] =
+    useState('in-person');
 
-  // Fetch Doctor details
+  const [selectedDay, setSelectedDay] = useState(15);
+  const [selectedMonth, setSelectedMonth] =
+    useState('October');
+  const [selectedYear, setSelectedYear] = useState(2026);
+
+  const [selectedSlot, setSelectedSlot] =
+    useState(preselectedSlot);
+
+  const [reason, setReason] = useState('');
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchDoctor = async () => {
       try {
         setLoadingDoctor(true);
-        // Backend endpoint: GET /api/doctors/:id/
-        const data = await doctorService.getDoctorById(doctorId);
-        if (isMounted && data) {
-          setDoctor(data);
-          if (data.availableSlots && !data.availableSlots.includes(selectedSlot)) {
-            setSelectedSlot(data.availableSlots[0]);
-          }
+        setErrorMessage(null);
+
+        const data = await doctorService.getDoctorById(
+          doctorId
+        );
+
+        if (!isMounted) return;
+
+        setDoctor(data);
+
+        const backendSlots = Array.isArray(
+          data?.availableSlots
+        )
+          ? data.availableSlots
+          : [];
+
+        if (
+          preselectedSlot &&
+          backendSlots.includes(preselectedSlot)
+        ) {
+          setSelectedSlot(preselectedSlot);
+        } else if (backendSlots.length > 0) {
+          setSelectedSlot(backendSlots[0]);
+        } else {
+          setSelectedSlot('');
         }
       } catch (err) {
-        if (isMounted) {
-          console.error('Backend doctor fetch error:', err);
-          setDoctor(null);
-          setErrorMessage(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to load doctor availability.');
-        }
+        if (!isMounted) return;
+
+        console.error(
+          'Backend doctor fetch error:',
+          err
+        );
+
+        setDoctor(null);
+        setErrorMessage(extractBackendError(err));
       } finally {
-        if (isMounted) setLoadingDoctor(false);
+        if (isMounted) {
+          setLoadingDoctor(false);
+        }
       }
     };
 
-    fetchDoctor();
+    if (doctorId) {
+      fetchDoctor();
+    } else {
+      setLoadingDoctor(false);
+      setErrorMessage('Doctor information is missing.');
+    }
+
     return () => {
       isMounted = false;
     };
-  }, [doctorId]);
+  }, [doctorId, preselectedSlot]);
 
-  const handleConfirmBooking = async (e) => {
-    e.preventDefault();
+  const availableSlots = Array.isArray(
+    doctor?.availableSlots
+  )
+    ? doctor.availableSlots
+    : [];
+
+  const handleConfirmBooking = async (event) => {
+    event.preventDefault();
+
     setErrorMessage(null);
-    setSubmitting(true);
 
+    if (!doctorId) {
+      setErrorMessage('Doctor information is missing.');
+      return;
+    }
+
+    if (!selectedSlot) {
+      setErrorMessage(
+        'Please select an available time slot.'
+      );
+      return;
+    }
+
+    if (!reason.trim()) {
+      setErrorMessage(
+        'Please enter the reason for your appointment.'
+      );
+      return;
+    }
+
+    const appointmentDate = formatAppointmentDate(
+      selectedDay,
+      selectedMonth,
+      selectedYear
+    );
+
+    const appointmentTime =
+      formatAppointmentTime(selectedSlot);
+
+    if (!appointmentDate) {
+      setErrorMessage('Please select a valid appointment date.');
+      return;
+    }
+
+    if (!appointmentTime) {
+      setErrorMessage('Please select a valid appointment time.');
+      return;
+    }
+
+    /*
+     * EXACT BACKEND CONTRACT
+     *
+     * POST /api/appointments/
+     *
+     * Patient booking:
+     * {
+     *   doctor_id,
+     *   appointment_date,
+     *   appointment_time,
+     *   reason
+     * }
+     */
     const bookingPayload = {
-      doctor_id: doctorId,
-      doctor_name: doctor?.name || 'Dr. Rahul Sharma',
-      specialty: doctor?.specialty || 'Cardiologist',
-      consultation_type: consultationType === 'in-person' ? 'In-person' : 'Video Consultation',
-      date: `${selectedDay} ${selectedMonth} ${selectedYear}`,
-      time_slot: selectedSlot,
-      patient_name: patientName,
-      patient_phone: patientPhone,
-      symptoms: symptoms || 'General Consultation',
-      fee: doctor?.consultationFee || 800,
+      doctor_id: Number(doctorId),
+      appointment_date: appointmentDate,
+      appointment_time: appointmentTime,
+      reason: reason.trim(),
     };
 
     try {
-      // Backend endpoint: POST /api/appointments/
-      // Payload: { doctor_id, date, time_slot, consultation_type, ... }
-      const res = await appointmentService.createAppointment(bookingPayload);
-      
+      setSubmitting(true);
+
+      const response =
+        await appointmentService.createAppointment(
+          bookingPayload
+        );
+
+      /*
+       * Navigate ONLY after backend successfully
+       * creates the appointment.
+       *
+       * No fake appointment ID is generated.
+       */
       navigate('/appointments/confirmation', {
         state: {
-          appointment: {
-            id: res?.id || `APT-${Date.now().toString().slice(-5)}`,
-            ...bookingPayload,
-          },
+          appointment: response,
         },
       });
     } catch (err) {
-      console.error('Backend appointment creation failed:', err);
-      setErrorMessage(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to create the appointment. Please try again.');
+      console.error(
+        'Backend appointment creation failed:',
+        err
+      );
+
+      setErrorMessage(extractBackendError(err));
     } finally {
       setSubmitting(false);
     }
@@ -116,200 +322,259 @@ export const BookAppointmentScreen = () => {
   if (loadingDoctor) {
     return (
       <PatientLayout>
-        <div className="py-24 flex flex-col items-center justify-center gap-3">
+        <div className="flex flex-col items-center justify-center gap-3 py-24">
           <LoadingSpinner size="lg" />
-          <span className="text-sm text-medisetu-muted">Preparing booking schedule...</span>
+
+          <span className="text-sm text-medisetu-muted">
+            Preparing booking schedule...
+          </span>
         </div>
       </PatientLayout>
     );
   }
 
-  const availableSlots = doctor?.availableSlots || [
-    '10:00 AM',
-    '10:30 AM',
-    '11:00 AM',
-    '11:30 AM',
-    '04:30 PM',
-    '05:00 PM',
-  ];
+  if (!doctor) {
+    return (
+      <PatientLayout>
+        <div className="mx-auto max-w-3xl px-4 py-12">
+          <TopHeader
+            title="Book Appointment"
+            subtitle="Appointment scheduling"
+            showBack
+            backTo="/doctors"
+          />
+
+          <ErrorAlert
+            title="Unable to load doctor"
+            message={
+              errorMessage ||
+              'Doctor information could not be loaded.'
+            }
+          />
+        </div>
+      </PatientLayout>
+    );
+  }
 
   return (
     <PatientLayout>
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        className="w-full space-y-6 pb-12"
+        transition={{ duration: 0.35 }}
+        className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8"
       >
-        {/* Header */}
         <TopHeader
           title="Book Appointment"
-          subtitle="Choose consultation type, date & slot"
-          showBack={true}
+          subtitle="Schedule your consultation"
+          showBack
           backTo={`/doctors/${doctorId}`}
-          className="px-1"
         />
 
-        {/* Stepper (Screen 11) */}
         <BookingStepper currentStep={2} />
 
         {errorMessage && (
-          <ErrorAlert
-            title="Booking Notice"
-            message={errorMessage}
-            onDismiss={() => setErrorMessage(null)}
-          />
+          <div className="mb-5">
+            <ErrorAlert
+              title="Booking Error"
+              message={errorMessage}
+            />
+          </div>
         )}
 
-        {/* Selected Doctor Summary Card */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-14 h-14 rounded-full overflow-hidden bg-blue-100 flex-shrink-0 border-2 border-white shadow-xs">
-              {getDoctorAvatar(doctor?.id, doctor?.name, 'w-full h-full')}
-            </div>
+        {/* Doctor summary */}
+        <div className="mb-6 rounded-2xl border border-medisetu-border bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
+          <div className="flex items-center gap-4">
+            <img
+              src={getDoctorAvatar(doctor)}
+              alt={doctor.name || 'Doctor'}
+              className="h-16 w-16 rounded-full object-cover"
+            />
 
-            <div className="flex flex-col">
-              <h2 className="text-base sm:text-lg font-bold text-medisetu-navy leading-tight">
-                {doctor?.name}
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-base font-bold text-medisetu-text dark:text-white">
+                {doctor.name}
               </h2>
-              <span className="text-xs sm:text-sm text-medisetu-primary font-semibold">
-                {doctor?.specialty}
-              </span>
-              <span className="text-xs text-medisetu-muted mt-0.5">
-                {doctor?.experience || '12 years experience'}
-              </span>
-            </div>
-          </div>
 
-          <div className="text-right">
-            <span className="text-xs text-medisetu-muted block">Fee</span>
-            <span className="text-base sm:text-lg font-bold text-medisetu-navy">
-              ₹{doctor?.consultationFee || 800}
-            </span>
+              <p className="text-sm text-medisetu-muted">
+                {doctor.specialty ||
+                  doctor.specialization ||
+                  'Medical Specialist'}
+              </p>
+
+              {doctor.consultationFee !== undefined &&
+                doctor.consultationFee !== null && (
+                  <p className="mt-1 text-sm font-semibold text-medisetu-primary">
+                    ₹{doctor.consultationFee}
+                  </p>
+                )}
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleConfirmBooking} className="space-y-6">
-          {/* 1. Consultation Type Radio (Screen 11) */}
-          <section className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-xs space-y-3">
-            <label className="text-sm sm:text-base font-bold text-medisetu-navy block">
-              1. Select Consultation Type
-            </label>
-            <ConsultationTypeRadio
-              selectedValue={consultationType}
-              onChange={(val) => setConsultationType(val)}
-            />
-          </section>
+        <form
+          onSubmit={handleConfirmBooking}
+          className="space-y-6"
+        >
+          {/* Consultation type - UI only.
+              Backend appointment contract currently does
+              not accept consultation_type. */}
+          <div className="rounded-2xl border border-medisetu-border bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h3 className="mb-4 text-base font-bold text-medisetu-text dark:text-white">
+              Consultation Type
+            </h3>
 
-          {/* 2. Select Date Calendar (Screen 11) */}
-          <section className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-xs space-y-3">
-            <label className="text-sm sm:text-base font-bold text-medisetu-navy block">
-              2. Select Date
-            </label>
+            <ConsultationTypeRadio
+              value={consultationType}
+              onChange={setConsultationType}
+            />
+
+            <p className="mt-3 text-xs text-medisetu-muted">
+              Consultation type is currently used for the
+              frontend selection only. It is not sent to the
+              appointment API because it is not part of the
+              confirmed backend contract.
+            </p>
+          </div>
+
+          {/* Date */}
+          <div className="rounded-2xl border border-medisetu-border bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h3 className="mb-4 text-base font-bold text-medisetu-text dark:text-white">
+              Select Date
+            </h3>
+
             <CalendarWidget
-              selectedDate={selectedDay}
+              selectedDay={selectedDay}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
-              onSelectDate={(day, month, year) => {
+              onDateChange={({
+                day,
+                month,
+                year,
+              }) => {
                 setSelectedDay(day);
-                if (month) setSelectedMonth(month);
-                if (year) setSelectedYear(year);
+                setSelectedMonth(month);
+                setSelectedYear(year);
               }}
             />
-          </section>
+          </div>
 
-          {/* 3. Select Time Slot (Screen 11) */}
-          <section className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm sm:text-base font-bold text-medisetu-navy block">
-                3. Available Time Slots
-              </label>
-              <span className="text-xs text-medisetu-muted">
-                {selectedDay} {selectedMonth} {selectedYear}
-              </span>
-            </div>
+          {/* Time slots */}
+          <div className="rounded-2xl border border-medisetu-border bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h3 className="mb-4 text-base font-bold text-medisetu-text dark:text-white">
+              Available Time
+            </h3>
 
-            <TimeSlotGrid
-              slots={availableSlots}
-              selectedSlot={selectedSlot}
-              onSelectSlot={(slot) => setSelectedSlot(slot)}
-            />
-          </section>
-
-          {/* 4. Patient Information */}
-          <section className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-xs space-y-4">
-            <label className="text-sm sm:text-base font-bold text-medisetu-navy block">
-              4. Patient Information
-            </label>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputField
-                label="Patient Full Name"
-                value={patientName}
-                onChange={(e) => setPatientName(e.target.value)}
-                placeholder="Full Name"
-                required
+            {availableSlots.length > 0 ? (
+              <TimeSlotGrid
+                slots={availableSlots}
+                selectedSlot={selectedSlot}
+                onSelect={setSelectedSlot}
               />
+            ) : (
+              <div className="rounded-xl border border-dashed border-medisetu-border p-6 text-center dark:border-slate-700">
+                <p className="text-sm font-medium text-medisetu-text dark:text-white">
+                  No time slots available
+                </p>
 
-              <InputField
-                label="Contact Number"
-                value={patientPhone}
-                onChange={(e) => setPatientPhone(e.target.value)}
-                placeholder="+91 98765 43210"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-medisetu-navy">
-                Reason for Visit / Symptoms (Optional)
-              </label>
-              <textarea
-                rows={2}
-                value={symptoms}
-                onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="Briefly describe your symptoms (e.g., chest pain, routine review)..."
-                className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-2xl text-sm text-medisetu-navy placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-medisetu-primary transition-all resize-none"
-              />
-            </div>
-          </section>
-
-          {/* 5. Summary & Price Breakdown */}
-          <div className="bg-blue-50/60 border border-blue-100 rounded-3xl p-5 space-y-3">
-            <div className="flex items-center justify-between text-xs sm:text-sm text-medisetu-slate">
-              <span>Consultation Type</span>
-              <span className="font-semibold text-medisetu-navy capitalize">
-                {consultationType} ({consultationType === 'in-person' ? 'At Hospital' : 'Video'})
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between text-xs sm:text-sm text-medisetu-slate">
-              <span>Appointment Slot</span>
-              <span className="font-semibold text-medisetu-navy">
-                {selectedDay} {selectedMonth} {selectedYear} at {selectedSlot}
-              </span>
-            </div>
-
-            <div className="border-t border-blue-200/60 pt-3 flex items-center justify-between">
-              <div>
-                <span className="text-xs text-medisetu-muted block">Total Payable</span>
-                <span className="text-xl font-extrabold text-medisetu-navy">
-                  ₹{doctor?.consultationFee || 800}
-                </span>
+                <p className="mt-1 text-xs text-medisetu-muted">
+                  Please choose another doctor or date.
+                </p>
               </div>
+            )}
+          </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                <ShieldCheck className="w-4 h-4" /> Pay at Hospital / Online
+          {/* Reason */}
+          <div className="rounded-2xl border border-medisetu-border bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <h3 className="mb-4 text-base font-bold text-medisetu-text dark:text-white">
+              Reason for Visit
+            </h3>
+
+            <textarea
+              value={reason}
+              onChange={(event) =>
+                setReason(event.target.value)
+              }
+              rows={4}
+              required
+              placeholder="Describe your symptoms or reason for consultation..."
+              className="w-full rounded-xl border border-medisetu-border bg-white px-4 py-3 text-sm text-medisetu-text outline-none transition focus:border-medisetu-primary focus:ring-2 focus:ring-medisetu-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            />
+          </div>
+
+          {/* Summary */}
+          <div className="rounded-2xl border border-medisetu-primary/20 bg-medisetu-primary/5 p-5">
+            <div className="flex items-start gap-3">
+              <ShieldCheck
+                size={22}
+                className="mt-0.5 shrink-0 text-medisetu-primary"
+              />
+
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-medisetu-text dark:text-white">
+                  Appointment Summary
+                </h3>
+
+                <div className="mt-3 space-y-2 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-medisetu-muted">
+                      Doctor
+                    </span>
+
+                    <span className="text-right font-medium text-medisetu-text dark:text-white">
+                      {doctor.name}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between gap-4">
+                    <span className="text-medisetu-muted">
+                      Date
+                    </span>
+
+                    <span className="font-medium text-medisetu-text dark:text-white">
+                      {selectedDay} {selectedMonth}{' '}
+                      {selectedYear}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between gap-4">
+                    <span className="text-medisetu-muted">
+                      Time
+                    </span>
+
+                    <span className="font-medium text-medisetu-text dark:text-white">
+                      {selectedSlot || 'Not selected'}
+                    </span>
+                  </div>
+
+                  {doctor.consultationFee !== undefined &&
+                    doctor.consultationFee !== null && (
+                      <div className="flex justify-between gap-4 border-t border-medisetu-primary/10 pt-2">
+                        <span className="text-medisetu-muted">
+                          Consultation Fee
+                        </span>
+
+                        <span className="font-bold text-medisetu-primary">
+                          ₹{doctor.consultationFee}
+                        </span>
+                      </div>
+                    )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Submit Action */}
           <PrimaryButton
             type="submit"
             size="lg"
             fullWidth
             isLoading={submitting}
+            disabled={
+              submitting ||
+              !selectedSlot ||
+              availableSlots.length === 0 ||
+              !reason.trim()
+            }
           >
             Confirm & Schedule Appointment
           </PrimaryButton>

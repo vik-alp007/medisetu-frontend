@@ -1,370 +1,427 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FileText, 
-  Upload, 
-  Search, 
-  Download, 
-  X, 
-  CheckCircle,
-  FileSpreadsheet
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  FileText,
+  CalendarDays,
+  UserRound,
+  Stethoscope,
+  Eye,
+  Download,
+  X,
+  Search,
 } from 'lucide-react';
 
 import PatientLayout from '../../layouts/PatientLayout';
 import TopHeader from '../../components/navigation/TopHeader';
-import RecordRow from '../../components/cards/RecordRow';
-import FilterChip from '../../components/common/FilterChip';
-import PrimaryButton from '../../components/common/PrimaryButton';
-import OutlineButton from '../../components/common/OutlineButton';
 import EmptyState from '../../components/feedback/EmptyState';
 import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { recordService } from '../../services/recordService';
 
-const CATEGORIES = ['All', 'Reports', 'Prescriptions', 'Visits'];
+const formatDate = (dateValue) => {
+  if (!dateValue) return 'Date not available';
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
+  }
+
+  return date.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const getDoctorName = (record) => {
+  const firstName = record?.doctor_detail?.user?.first_name || '';
+  const lastName = record?.doctor_detail?.user?.last_name || '';
+
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  return fullName
+    ? fullName.startsWith('Dr.')
+      ? fullName
+      : `Dr. ${fullName}`
+    : 'Doctor';
+};
+
+const getSpecialization = (record) => {
+  return (
+    record?.doctor_detail?.specialization ||
+    record?.doctor_detail?.specialty ||
+    'Specialization not provided'
+  );
+};
+
+const getRecordTitle = (record) => {
+  return (
+    record?.diagnosis ||
+    record?.title ||
+    record?.record_name ||
+    record?.document_name ||
+    'Medical Record'
+  );
+};
+
+const getRecordType = (record) => {
+  if (record?.diagnosis) {
+    return 'Medical Report';
+  }
+
+  return (
+    record?.record_type ||
+    record?.type ||
+    record?.category ||
+    'Medical Record'
+  );
+};
+
+const getRecordNotes = (record) => {
+  return (
+    record?.doctor_notes ||
+    record?.description ||
+    record?.notes ||
+    'No additional notes available.'
+  );
+};
+
+const getReportFile = (record) => {
+  return (
+    record?.report_file ||
+    record?.file_url ||
+    record?.document_url ||
+    record?.download_url ||
+    record?.file ||
+    null
+  );
+};
+
+const RecordCard = ({ record, onPreview }) => {
+  const title = getRecordTitle(record);
+  const doctorName = getDoctorName(record);
+  const specialization = getSpecialization(record);
+  const date = formatDate(record?.created_at || record?.record_date);
+  const type = getRecordType(record);
+  const fileUrl = getReportFile(record);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+          <FileText className="w-5 h-5 text-medisetu-primary" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-medisetu-navy text-sm">
+            {title}
+          </h3>
+
+          <p className="text-xs text-medisetu-muted mt-1">
+            {type}
+          </p>
+
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-slate-500">
+            <span className="flex items-center gap-1">
+              <CalendarDays className="w-3.5 h-3.5" />
+              {date}
+            </span>
+
+            <span className="flex items-center gap-1">
+              <UserRound className="w-3.5 h-3.5" />
+              {doctorName}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1 mt-2 text-xs text-slate-500">
+            <Stethoscope className="w-3.5 h-3.5" />
+            {specialization}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => onPreview(record)}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-medisetu-primary hover:opacity-80"
+        >
+          <Eye className="w-4 h-4" />
+          View Details
+        </button>
+
+        {fileUrl ? (
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-medisetu-primary"
+          >
+            <Download className="w-4 h-4" />
+            Download
+          </a>
+        ) : (
+          <span className="text-xs text-slate-400">
+            No file
+          </span>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 export const MedicalRecordsScreen = () => {
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
   const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [apiNotice, setApiNotice] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errorNotice, setErrorNotice] = useState(null);
 
-  // Preview Modal State
-  const [activePreview, setActivePreview] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRecord, setSelectedRecord] = useState(null);
 
-  // Upload Document State
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadFileName, setUploadFileName] = useState('');
-  const [uploadCategory, setUploadCategory] = useState('Reports');
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const fetchRecords = async () => {
+    try {
+      setLoading(true);
+      setErrorNotice(null);
 
-  // Fetch records from backend (GET /api/medical-records/)
-  useEffect(() => {
-    let isMounted = true;
+      const data = await recordService.getMedicalRecords();
 
-    const fetchRecords = async () => {
-      try {
-        setLoading(true);
-        setApiNotice(null);
-        // Backend endpoint: GET /api/medical-records/
-        const data = await recordService.getMedicalRecords();
-        if (isMounted && data) {
-          if (Array.isArray(data) && data.length > 0) {
-            setRecords(data);
-          } else if (data.results && Array.isArray(data.results)) {
-            setRecords(data.results);
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error('Backend medical records API error:', err);
-          setApiNotice(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to load medical records from the hospital server.');
-          setRecords([]);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
+      if (Array.isArray(data)) {
+        setRecords(data);
+      } else if (Array.isArray(data?.results)) {
+        setRecords(data.results);
+      } else {
+        setRecords([]);
       }
-    };
+    } catch (error) {
+      console.error('Medical records API error:', error);
 
+      setRecords([]);
+
+      setErrorNotice(
+        error?.response?.data?.detail ||
+          error?.response?.data?.message ||
+          error?.message ||
+          'Unable to load medical records.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchRecords();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
-  // Filter records by category and search
   const filteredRecords = useMemo(() => {
-    return records.filter((rec) => {
-      const matchCat =
-        selectedCategory === 'All' ||
-        (rec.category && rec.category.toLowerCase() === selectedCategory.toLowerCase());
+    const query = searchQuery.trim().toLowerCase();
 
-      const matchSearch =
-        searchQuery.trim() === '' ||
-        rec.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rec.date?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rec.type?.toLowerCase().includes(searchQuery.toLowerCase());
+    return records.filter((record) => {
+      const title = getRecordTitle(record).toLowerCase();
+      const doctor = getDoctorName(record).toLowerCase();
+      const specialization = getSpecialization(record).toLowerCase();
+      const notes = getRecordNotes(record).toLowerCase();
 
-      return matchCat && matchSearch;
+      const matchesSearch =
+        !query ||
+        title.includes(query) ||
+        doctor.includes(query) ||
+        specialization.includes(query) ||
+        notes.includes(query);
+
+      let matchesFilter = true;
+
+      if (activeFilter === 'Reports') {
+        matchesFilter = Boolean(record?.diagnosis || record?.report_file);
+      }
+
+      if (activeFilter === 'Visits') {
+        matchesFilter = Boolean(record?.appointment);
+      }
+
+      return matchesSearch && matchesFilter;
     });
-  }, [records, selectedCategory, searchQuery]);
-
-  const handleUploadSubmit = (e) => {
-    e.preventDefault();
-    if (!uploadFileName) return;
-
-    const newRecord = {
-      id: `rec-${Date.now()}`,
-      type: uploadCategory === 'Prescriptions' ? 'rx' : 'lab',
-      title: uploadFileName,
-      date: 'Today - Just now',
-      category: uploadCategory,
-    };
-
-    setRecords([newRecord, ...records]);
-    setUploadSuccess(true);
-    setTimeout(() => {
-      setUploadSuccess(false);
-      setShowUploadModal(false);
-      setUploadFileName('');
-    }, 1200);
-  };
+  }, [records, activeFilter, searchQuery]);
 
   return (
     <PatientLayout>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
         className="w-full space-y-5 pb-6"
       >
-        {/* Header */}
         <TopHeader
           title="Medical Records"
-          subtitle="All diagnostic reports, prescriptions & test summaries"
+          subtitle="View your medical history and reports"
           showBack={true}
           backTo="/dashboard"
-          rightElement={
-            <PrimaryButton
-              size="sm"
-              onClick={() => setShowUploadModal(true)}
-              className="gap-1.5"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Upload</span>
-            </PrimaryButton>
-          }
           className="px-1"
         />
 
-        {apiNotice && (
+        {errorNotice && (
           <ErrorAlert
-            title="Records Service"
-            message={apiNotice}
-            onDismiss={() => setApiNotice(null)}
+            title="Medical Records Service"
+            message={errorNotice}
+            onRetry={fetchRecords}
           />
         )}
 
-        {/* Search Input Bar */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-medisetu-muted">
-            <Search className="w-5 h-5" />
-          </div>
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search report name, date or lab type..."
-            className="w-full pl-11 pr-10 py-3 bg-white border border-slate-200/90 rounded-2xl text-sm text-medisetu-navy placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-medisetu-primary transition-all shadow-xs"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search records, doctors..."
+            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-medisetu-navy placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-medisetu-primary"
           />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORIES.map((cat) => (
-            <FilterChip
-              key={cat}
-              label={cat}
-              isActive={selectedCategory.toLowerCase() === cat.toLowerCase()}
-              onClick={() => setSelectedCategory(cat)}
-            />
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {['All', 'Reports', 'Visits'].map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              onClick={() => setActiveFilter(filter)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
+                activeFilter === filter
+                  ? 'bg-medisetu-primary text-white'
+                  : 'bg-white text-slate-600 border border-slate-200'
+              }`}
+            >
+              {filter}
+            </button>
           ))}
         </div>
 
-        {/* Records Count */}
-        <div className="flex items-center justify-between px-1 text-xs text-medisetu-muted">
-          <span>{filteredRecords.length} documents archived</span>
-          <span className="text-medisetu-primary font-medium">HIPAA Encrypted</span>
-        </div>
-
-        {/* Records List (Screen 13) */}
         {loading ? (
           <div className="py-16 flex justify-center">
             <LoadingSpinner size="lg" />
           </div>
+        ) : errorNotice ? (
+          <EmptyState
+            title="Unable to Load Records"
+            description={errorNotice}
+            actionText="Try Again"
+            onAction={fetchRecords}
+          />
         ) : filteredRecords.length > 0 ? (
-          <div className="space-y-3">
-            {filteredRecords.map((rec) => (
-              <RecordRow
-                key={rec.id}
-                id={rec.id}
-                type={rec.type}
-                title={rec.title}
-                date={rec.date}
-                onView={() => setActivePreview(rec)}
+          <div className="space-y-3.5">
+            {filteredRecords.map((record) => (
+              <RecordCard
+                key={record.id}
+                record={record}
+                onPreview={setSelectedRecord}
               />
             ))}
           </div>
         ) : (
           <EmptyState
-            title="No Records Found"
-            description="You don't have any uploaded medical records matching your filter."
-            actionText="Clear Filters"
-            onAction={() => {
-              setSearchQuery('');
-              setSelectedCategory('All');
-            }}
+            title="No Medical Records"
+            description={
+              searchQuery
+                ? `No records matched "${searchQuery}".`
+                : 'No medical records are available yet.'
+            }
+            actionText={searchQuery ? 'Clear Search' : undefined}
+            onAction={
+              searchQuery
+                ? () => setSearchQuery('')
+                : undefined
+            }
           />
         )}
 
-        {/* Document Preview Modal */}
-        <AnimatePresence>
-          {activePreview && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-medisetu-primary flex items-center justify-center">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-bold text-medisetu-navy leading-tight">
-                        {activePreview.title}
-                      </h3>
-                      <span className="text-xs text-medisetu-muted">{activePreview.date}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setActivePreview(null)}
-                    className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+        {selectedRecord && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-slate-100">
+                <div>
+                  <h2 className="font-semibold text-lg text-medisetu-navy">
+                    Medical Record
+                  </h2>
+                  <p className="text-xs text-medisetu-muted mt-1">
+                    {formatDate(selectedRecord.created_at)}
+                  </p>
                 </div>
 
-                {/* Simulated Document Canvas */}
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center space-y-3">
-                  <FileSpreadsheet className="w-12 h-12 text-medisetu-primary mx-auto opacity-70" />
-                  <div>
-                    <h4 className="text-sm font-bold text-medisetu-navy">
-                      Verified Clinical Document
-                    </h4>
-                    <p className="text-xs text-medisetu-muted mt-0.5">
-                      Issued by MediSetu Partner Diagnostic Lab & Hospitals
-                    </p>
-                  </div>
-                  <div className="text-xs bg-white border border-slate-200/80 rounded-xl p-3 text-left space-y-1 text-medisetu-slate">
-                    <p><strong className="text-medisetu-navy">Document ID:</strong> {activePreview.id}</p>
-                    <p><strong className="text-medisetu-navy">Status:</strong> Signed & Verified</p>
-                    <p><strong className="text-medisetu-navy">Doctor Notes:</strong> Findings within normal clinical thresholds.</p>
-                  </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedRecord(null)}
+                  className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div>
+                  <p className="text-xs text-slate-400 uppercase tracking-wide">
+                    Diagnosis
+                  </p>
+                  <p className="text-sm font-semibold text-medisetu-navy mt-1">
+                    {selectedRecord.diagnosis || 'Not provided'}
+                  </p>
                 </div>
 
-                {/* Modal Actions */}
-                <div className="flex gap-3">
-                  <PrimaryButton
-                    fullWidth
-                    onClick={() => {
-                      alert(`Downloading ${activePreview.title} PDF...`);
-                      setActivePreview(null);
-                    }}
-                    className="gap-2"
-                  >
-                    <Download className="w-4 h-4" /> Download PDF
-                  </PrimaryButton>
-                  <OutlineButton
-                    fullWidth
-                    onClick={() => setActivePreview(null)}
-                  >
-                    Close
-                  </OutlineButton>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* Upload Record Modal */}
-        <AnimatePresence>
-          {showUploadModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-base sm:text-lg font-bold text-medisetu-navy">
-                    Upload Health Document
-                  </h3>
-                  <button
-                    onClick={() => setShowUploadModal(false)}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase tracking-wide">
+                    Doctor
+                  </p>
+                  <p className="text-sm text-slate-700 mt-1">
+                    {getDoctorName(selectedRecord)}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {getSpecialization(selectedRecord)}
+                  </p>
                 </div>
 
-                {uploadSuccess ? (
-                  <div className="py-8 text-center space-y-2">
-                    <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto" />
-                    <h4 className="text-base font-bold text-medisetu-navy">Uploaded Successfully!</h4>
-                    <p className="text-xs text-medisetu-muted">Your document has been securely added to your records.</p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleUploadSubmit} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-medisetu-navy">Document Title</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g., Annual Health Checkup, Vitamin D Test"
-                        value={uploadFileName}
-                        onChange={(e) => setUploadFileName(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-medisetu-navy focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-medisetu-primary"
-                      />
-                    </div>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase tracking-wide">
+                    Doctor Notes
+                  </p>
+                  <p className="text-sm text-slate-700 mt-1 leading-6">
+                    {getRecordNotes(selectedRecord)}
+                  </p>
+                </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-medisetu-navy">Record Category</label>
-                      <select
-                        value={uploadCategory}
-                        onChange={(e) => setUploadCategory(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-medisetu-navy focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-medisetu-primary"
-                      >
-                        <option value="Reports">Reports (Blood test, X-Ray, Scan)</option>
-                        <option value="Prescriptions">Prescriptions</option>
-                        <option value="Visits">Visits & Summaries</option>
-                      </select>
-                    </div>
+                <div>
+                  <p className="text-xs text-slate-400 uppercase tracking-wide">
+                    Appointment
+                  </p>
+                  <p className="text-sm text-slate-700 mt-1">
+                    {selectedRecord.appointment
+                      ? `Appointment #${selectedRecord.appointment}`
+                      : 'Not linked'}
+                  </p>
+                </div>
 
-                    <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-2 bg-slate-50/50 hover:bg-slate-50 cursor-pointer">
-                      <Upload className="w-8 h-8 text-medisetu-primary mx-auto" />
-                      <p className="text-xs text-medisetu-slate font-medium">
-                        Click to select PDF or image document
-                      </p>
-                      <span className="text-[11px] text-medisetu-muted block">
-                        Supported: PDF, JPG, PNG up to 10MB
-                      </span>
-                    </div>
-
-                    <PrimaryButton fullWidth type="submit">
-                      Upload Document
-                    </PrimaryButton>
-                  </form>
+                {getReportFile(selectedRecord) && (
+                  <a
+                    href={getReportFile(selectedRecord)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-medisetu-primary text-white text-sm font-medium"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Report
+                  </a>
                 )}
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </motion.div>
     </PatientLayout>
   );
