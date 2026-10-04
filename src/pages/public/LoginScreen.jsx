@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, User, Stethoscope, Building2 } from 'lucide-react';
+import { User, Stethoscope, Building2, AtSign } from 'lucide-react';
+
 import AuthLayout from '../../layouts/AuthLayout';
 import MediSetuLogo from '../../components/common/MediSetuLogo';
 import SegmentedTabs from '../../components/common/SegmentedTabs';
@@ -11,19 +12,45 @@ import PrimaryButton from '../../components/common/PrimaryButton';
 import BackButton from '../../components/navigation/BackButton';
 import DoctorHeroIllustration from '../../assets/illustrations/DoctorHeroIllustration';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
+
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 
 /**
  * LoginScreen
- * Uses the established MediSetu authentication visual language.
+ *
+ * Backend:
+ * POST /api/auth/login/
+ *
+ * Request:
+ * {
+ *   username: string,
+ *   password: string
+ * }
+ *
+ * Response:
+ * {
+ *   refresh: string,
+ *   access: string,
+ *   user: {
+ *     id,
+ *     username,
+ *     email,
+ *     first_name,
+ *     last_name,
+ *     role
+ *   }
+ * }
  */
+
 export const LoginScreen = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+
   const [activeRole, setActiveRole] = useState('patient');
+
   const [formData, setFormData] = useState({
-    identifier: '', // Email or Phone
+    username: '',
     password: '',
     rememberMe: false,
   });
@@ -32,85 +59,221 @@ export const LoginScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
 
+  // --------------------------------------------------
+  // Handle input change
+  // --------------------------------------------------
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
     }
+
     if (apiError) {
       setApiError(null);
     }
   };
 
+  // --------------------------------------------------
+  // Validation
+  // --------------------------------------------------
+
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.identifier.trim()) {
-      newErrors.identifier = 'Email address or Mobile number is required';
+
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
     }
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password =
+        'Password must be at least 6 characters';
     }
 
     setErrors(newErrors);
+
     return Object.keys(newErrors).length === 0;
   };
 
+  // --------------------------------------------------
+  // Portal redirect
+  // --------------------------------------------------
+
   const handlePortalRedirect = (role) => {
-    if (role === 'doctor') {
+    const normalizedRole = role?.toUpperCase();
+
+    if (normalizedRole === 'DOCTOR') {
       navigate('/dashboard/doctor');
-    } else if (role === 'admin') {
-      navigate('/dashboard/admin');
-    } else {
-      navigate('/dashboard');
+      return;
     }
+
+    if (normalizedRole === 'ADMIN') {
+      navigate('/dashboard/admin');
+      return;
+    }
+
+    navigate('/dashboard');
   };
+
+  // --------------------------------------------------
+  // Login
+  // --------------------------------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+
+    if (!validateForm()) {
+      return;
+    }
 
     setIsSubmitting(true);
     setApiError(null);
 
     try {
-      // Backend endpoint: POST /api/auth/login/
+      // EXACT backend login contract
       const payload = {
-        email: formData.identifier,
-        username: formData.identifier,
+        username: formData.username.trim(),
         password: formData.password,
-        role: activeRole,
       };
 
-      const res = await authService.login(payload);
-      const token = res?.access || res?.token || res?.access_token || res?.data?.access;
-      const userData = res?.user || { name: formData.identifier.split('@')[0], role: activeRole };
+      console.log('MediSetu login request:', {
+        username: payload.username,
+      });
 
-      if (token) {
-        login(token, userData, activeRole);
+      const response = await authService.login(payload);
+
+      console.log('MediSetu login successful');
+
+      // Backend response:
+      //
+      // {
+      //   refresh: "...",
+      //   access: "...",
+      //   user: {...}
+      // }
+
+      const accessToken = response?.access;
+      const refreshToken = response?.refresh;
+      const userData = response?.user;
+
+      // Safety check
+      if (!accessToken) {
+        throw new Error(
+          'Login successful but access token was not returned by the server.'
+        );
       }
-      handlePortalRedirect(activeRole);
-    } catch (err) {
-      console.warn('Login attempt returned error:', err.message);
-      setApiError(
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        err.message ||
-        'Authentication failed. Please verify your credentials or server connection.'
+
+      if (!userData) {
+        throw new Error(
+          'Login successful but user information was not returned by the server.'
+        );
+      }
+
+      // Store refresh token separately.
+      // AuthContext already stores the access token.
+      if (refreshToken) {
+        localStorage.setItem(
+          'medisetu_refresh_token',
+          refreshToken
+        );
+      }
+
+      // Backend is the source of truth for role.
+      const backendRole =
+        userData.role?.toUpperCase() || 'PATIENT';
+
+      // Save authentication state.
+      login(
+        accessToken,
+        userData,
+        backendRole
       );
+
+      // Redirect according to backend role.
+      handlePortalRedirect(backendRole);
+    } catch (error) {
+      console.error(
+        'MediSetu login failed:',
+        error
+      );
+
+      const responseData = error?.response?.data;
+
+      let message =
+        'Login failed. Please check your username and password.';
+
+      // 401:
+      // {
+      //   "detail": "No active account found..."
+      // }
+      if (responseData?.detail) {
+        message = responseData.detail;
+      }
+
+      // 400:
+      // {
+      //   "username": ["This field is required."],
+      //   "password": ["This field is required."]
+      // }
+      else if (
+        responseData &&
+        typeof responseData === 'object'
+      ) {
+        const messages = [];
+
+        Object.entries(responseData).forEach(
+          ([field, value]) => {
+            if (Array.isArray(value)) {
+              messages.push(
+                `${field}: ${value.join(', ')}`
+              );
+            } else if (
+              typeof value === 'string'
+            ) {
+              messages.push(
+                `${field}: ${value}`
+              );
+            }
+          }
+        );
+
+        if (messages.length > 0) {
+          message = messages.join(' | ');
+        }
+      }
+
+      // Network/server error
+      else if (error?.message) {
+        message = error.message;
+      }
+
+      setApiError(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // --------------------------------------------------
+  // Left Hero
+  // --------------------------------------------------
+
   const leftHeroContent = (
     <div className="space-y-6">
-      <Link to="/" className="inline-block hover:opacity-95 transition-opacity">
+      <Link
+        to="/"
+        className="inline-block hover:opacity-95 transition-opacity"
+      >
         <MediSetuLogo size="md" />
       </Link>
 
@@ -119,8 +282,10 @@ export const LoginScreen = () => {
           Welcome Back <br />
           to MediSetu
         </h2>
+
         <p className="text-sm lg:text-base text-medisetu-muted mt-2 max-w-sm leading-relaxed">
-          Access your appointments, medical records, and healthcare portal in one place.
+          Access your appointments, medical records,
+          and healthcare portal in one place.
         </p>
       </div>
 
@@ -130,61 +295,97 @@ export const LoginScreen = () => {
     </div>
   );
 
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
+
   return (
     <AuthLayout leftContent={leftHeroContent}>
       <div className="space-y-5">
-        {/* Top Back Navigation & Header */}
+
+        {/* Top navigation */}
         <div className="flex items-center justify-between">
-          <BackButton onClick={() => navigate(-1)} />
+          <BackButton
+            onClick={() => navigate(-1)}
+          />
+
           <Link
             to="/register"
             className="text-xs font-semibold text-medisetu-primary hover:underline"
           >
-            Don't have an account? <span className="font-bold">Register</span>
+            Don't have an account?{' '}
+            <span className="font-bold">
+              Register
+            </span>
           </Link>
         </div>
 
+        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-medisetu-navy">
             Sign In to Your Account
           </h1>
+
           <p className="text-xs sm:text-sm text-medisetu-muted mt-1">
             Choose your portal role to continue.
           </p>
         </div>
 
-        {/* Role Switcher Tabs */}
+        {/* Role switcher */}
         <SegmentedTabs
           tabs={[
-            { id: 'patient', label: 'Patient', icon: User },
-            { id: 'doctor', label: 'Doctor', icon: Stethoscope },
-            { id: 'admin', label: 'Admin', icon: Building2 },
+            {
+              id: 'patient',
+              label: 'Patient',
+              icon: User,
+            },
+            {
+              id: 'doctor',
+              label: 'Doctor',
+              icon: Stethoscope,
+            },
+            {
+              id: 'admin',
+              label: 'Admin',
+              icon: Building2,
+            },
           ]}
           activeTab={activeRole}
           onChange={setActiveRole}
         />
 
+        {/* API error */}
         {apiError && (
           <ErrorAlert
             title="Sign In Failed"
             message={apiError}
-            onDismiss={() => setApiError(null)}
+            onDismiss={() =>
+              setApiError(null)
+            }
           />
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {/* Login form */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+          noValidate
+        >
+
+          {/* Username */}
           <InputField
-            id="identifier"
-            name="identifier"
-            label="Email or Mobile Number"
-            placeholder="Enter your email or phone"
-            icon={Mail}
-            value={formData.identifier}
+            id="username"
+            name="username"
+            label="Username"
+            placeholder="Enter your username"
+            icon={AtSign}
+            value={formData.username}
             onChange={handleChange}
-            error={errors.identifier}
+            error={errors.username}
             required
           />
 
+          {/* Password */}
           <PasswordInput
             id="password"
             name="password"
@@ -196,6 +397,7 @@ export const LoginScreen = () => {
             required
           />
 
+          {/* Remember me */}
           <div className="flex items-center justify-between pt-1">
             <Checkbox
               id="rememberMe"
@@ -214,24 +416,41 @@ export const LoginScreen = () => {
             </a>
           </div>
 
+          {/* Submit */}
           <div className="pt-2">
-            <PrimaryButton fullWidth type="submit" loading={isSubmitting} size="lg">
-              Sign In to {activeRole.charAt(0).toUpperCase() + activeRole.slice(1)} Portal
+            <PrimaryButton
+              fullWidth
+              type="submit"
+              loading={isSubmitting}
+              size="lg"
+            >
+              Sign In to{' '}
+              {activeRole.charAt(0).toUpperCase() +
+                activeRole.slice(1)}{' '}
+              Portal
             </PrimaryButton>
           </div>
         </form>
 
+        {/* Footer */}
         <div className="text-center pt-2">
           <span className="text-xs text-medisetu-muted">
             New to MediSetu?{' '}
             <Link
-              to={activeRole === 'doctor' ? '/register/doctor' : activeRole === 'admin' ? '/register/admin' : '/register'}
+              to={
+                activeRole === 'doctor'
+                  ? '/register/doctor'
+                  : activeRole === 'admin'
+                  ? '/register/admin'
+                  : '/register'
+              }
               className="text-medisetu-primary font-bold hover:underline"
             >
               Create an account
             </Link>
           </span>
         </div>
+
       </div>
     </AuthLayout>
   );

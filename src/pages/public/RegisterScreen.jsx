@@ -5,13 +5,14 @@ import {
   Phone,
   Mail,
   Calendar,
-  Lock,
   Stethoscope,
   Building2,
   MapPin,
   Briefcase,
   IdCard,
+  AtSign,
 } from 'lucide-react';
+
 import AuthLayout from '../../layouts/AuthLayout';
 import MediSetuLogo from '../../components/common/MediSetuLogo';
 import SegmentedTabs from '../../components/common/SegmentedTabs';
@@ -22,39 +23,89 @@ import Checkbox from '../../components/common/Checkbox';
 import PrimaryButton from '../../components/common/PrimaryButton';
 import BackButton from '../../components/navigation/BackButton';
 import DoctorHeroIllustration from '../../assets/illustrations/DoctorHeroIllustration';
+import ErrorAlert from '../../components/feedback/ErrorAlert';
+
+import { authService } from '../../services/authService';
 
 /**
- * RegisterScreen: Screens 5 & 7 (Patient, Doctor, and Admin Forms)
- * Provides interactive role switching, client validation, and exact Figma styling.
+ * RegisterScreen
+ *
+ * Handles registration for:
+ * - Patient
+ * - Doctor
+ * - Admin
+ *
+ * Backend:
+ * POST /api/auth/register/
+ *
+ * Backend roles:
+ * PATIENT
+ * DOCTOR
+ * ADMIN
  */
 export const RegisterScreen = ({ initialRole = 'patient' }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Determine current active role from route, query param, or prop
+  // --------------------------------------------------
+  // Determine initial role
+  // --------------------------------------------------
+
   const getInitialRole = () => {
     const params = new URLSearchParams(location.search);
-    if (params.get('role') === 'admin' || location.pathname.includes('/admin-form')) return 'admin';
-    if (location.pathname.includes('/doctor') || params.get('role') === 'doctor') return 'doctor';
+
+    if (
+      params.get('role') === 'admin' ||
+      location.pathname.includes('/admin-form')
+    ) {
+      return 'admin';
+    }
+
+    if (
+      location.pathname.includes('/doctor') ||
+      params.get('role') === 'doctor'
+    ) {
+      return 'doctor';
+    }
+
     return initialRole;
   };
 
   const [activeRole, setActiveRole] = useState(getInitialRole);
 
-  // Sync state if route or search param changes
+  // --------------------------------------------------
+  // Keep role synced with URL
+  // --------------------------------------------------
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('role') === 'admin' || location.pathname.includes('/admin-form')) {
+
+    if (
+      params.get('role') === 'admin' ||
+      location.pathname.includes('/admin-form')
+    ) {
       setActiveRole('admin');
-    } else if (location.pathname.includes('/doctor') || params.get('role') === 'doctor') {
+    } else if (
+      location.pathname.includes('/doctor') ||
+      params.get('role') === 'doctor'
+    ) {
       setActiveRole('doctor');
-    } else if (location.pathname === '/register' && !params.get('role')) {
+    } else if (
+      location.pathname === '/register' &&
+      !params.get('role')
+    ) {
       setActiveRole('patient');
     }
   }, [location.pathname, location.search]);
 
+  // --------------------------------------------------
   // Form State
+  // --------------------------------------------------
+
   const [formData, setFormData] = useState({
+    // Backend-required common field
+    username: '',
+
     // Common
     fullName: '',
     mobileNumber: '',
@@ -63,17 +114,17 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
     confirmPassword: '',
     agreeTerms: false,
 
-    // Patient Specific
+    // Patient
     dateOfBirth: '',
     gender: '',
 
-    // Doctor Specific
+    // Doctor
     registrationNumber: '',
     specialization: '',
     hospitalName: '',
     clinicAddress: '',
 
-    // Admin Specific
+    // Admin
     designation: '',
     organizationName: '',
   });
@@ -81,11 +132,18 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedNotice, setSubmittedNotice] = useState(null);
+  const [apiError, setApiError] = useState(null);
+
+  // --------------------------------------------------
+  // Role Change
+  // --------------------------------------------------
 
   const handleRoleChange = (role) => {
     setActiveRole(role);
     setErrors({});
     setSubmittedNotice(null);
+    setApiError(null);
+
     if (role === 'doctor') {
       navigate('/register/doctor');
     } else if (role === 'admin') {
@@ -95,95 +153,375 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
     }
   };
 
+  // --------------------------------------------------
+  // Input Change
+  // --------------------------------------------------
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
-    // Clear error for field on change
+
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+      }));
+    }
+
+    if (apiError) {
+      setApiError(null);
+    }
+
+    if (submittedNotice) {
+      setSubmittedNotice(null);
     }
   };
 
+  // --------------------------------------------------
+  // Split full name
+  // --------------------------------------------------
+
+  const getNameParts = () => {
+    const cleanedName = formData.fullName.trim();
+
+    if (!cleanedName) {
+      return {
+        first_name: '',
+        last_name: '',
+      };
+    }
+
+    const nameParts = cleanedName.split(/\s+/);
+
+    const first_name = nameParts[0];
+
+    const last_name =
+      nameParts.length > 1
+        ? nameParts.slice(1).join(' ')
+        : '';
+
+    return {
+      first_name,
+      last_name,
+    };
+  };
+
+  // --------------------------------------------------
   // Frontend Validation
+  // --------------------------------------------------
+
   const validateForm = () => {
     const newErrors = {};
 
-    // Common validations
-    if (!formData.fullName.trim()) newErrors.fullName = 'Full Name is required';
+    // Username
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (
+      !/^[a-zA-Z0-9_.-]{3,30}$/.test(formData.username.trim())
+    ) {
+      newErrors.username =
+        'Username must be 3-30 characters and use only letters, numbers, _, . or -';
+    }
+
+    // Full Name
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Full Name is required';
+    }
+
+    // Mobile
     if (!formData.mobileNumber.trim()) {
       newErrors.mobileNumber = 'Mobile Number is required';
-    } else if (!/^[0-9+ -]{8,15}$/.test(formData.mobileNumber.trim())) {
+    } else if (
+      !/^[0-9+ -]{8,15}$/.test(formData.mobileNumber.trim())
+    ) {
       newErrors.mobileNumber = 'Enter a valid mobile number';
     }
 
+    // Email
     if (!formData.email.trim()) {
       newErrors.email = 'Email Address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+    } else if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())
+    ) {
       newErrors.email = 'Enter a valid email address';
     }
 
+    // Password
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password =
+        'Password must be at least 6 characters';
     }
 
+    // Confirm Password
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword =
+        'Confirm your password';
+    } else if (
+      formData.password !== formData.confirmPassword
+    ) {
+      newErrors.confirmPassword =
+        'Passwords do not match';
     }
 
+    // Terms
     if (!formData.agreeTerms) {
-      newErrors.agreeTerms = 'You must agree to the Terms & Privacy Policy';
+      newErrors.agreeTerms =
+        'You must agree to the Terms & Privacy Policy';
     }
 
-    // Role-specific validations
+    // --------------------------------------------------
+    // Patient validation
+    // --------------------------------------------------
+
     if (activeRole === 'patient') {
-      if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
-      if (!formData.gender) newErrors.gender = 'Please select a gender';
-    } else if (activeRole === 'doctor') {
-      if (!formData.registrationNumber.trim()) {
-        newErrors.registrationNumber = 'Registration Number (MCI/NMC) is required';
+      if (!formData.dateOfBirth) {
+        newErrors.dateOfBirth =
+          'Date of birth is required';
       }
-      if (!formData.specialization) newErrors.specialization = 'Please select specialization';
-      if (!formData.hospitalName.trim()) newErrors.hospitalName = 'Hospital / Clinic name is required';
-      if (!formData.clinicAddress.trim()) newErrors.clinicAddress = 'Clinic address is required';
-    } else if (activeRole === 'admin') {
-      if (!formData.designation) newErrors.designation = 'Please select your designation';
-      if (!formData.organizationName.trim()) newErrors.organizationName = 'Organization / Hospital name is required';
+
+      if (!formData.gender) {
+        newErrors.gender =
+          'Please select a gender';
+      }
+    }
+
+    // --------------------------------------------------
+    // Doctor validation
+    // --------------------------------------------------
+
+    if (activeRole === 'doctor') {
+      if (!formData.registrationNumber.trim()) {
+        newErrors.registrationNumber =
+          'Registration Number (MCI/NMC) is required';
+      }
+
+      if (!formData.specialization) {
+        newErrors.specialization =
+          'Please select specialization';
+      }
+
+      if (!formData.hospitalName.trim()) {
+        newErrors.hospitalName =
+          'Hospital / Clinic name is required';
+      }
+
+      if (!formData.clinicAddress.trim()) {
+        newErrors.clinicAddress =
+          'Clinic address is required';
+      }
+    }
+
+    // --------------------------------------------------
+    // Admin validation
+    // --------------------------------------------------
+
+    if (activeRole === 'admin') {
+      if (!formData.designation) {
+        newErrors.designation =
+          'Please select your designation';
+      }
+
+      if (!formData.organizationName.trim()) {
+        newErrors.organizationName =
+          'Organization / Hospital name is required';
+      }
     }
 
     setErrors(newErrors);
+
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  // --------------------------------------------------
+  // Build Backend Payload
+  // --------------------------------------------------
 
-    setIsSubmitting(true);
-    setSubmittedNotice(null);
+  const buildRegistrationPayload = () => {
+    const { first_name, last_name } = getNameParts();
 
-    // In accordance with instructions:
-    // DO NOT send invented API payloads.
-    // Store in local component state and show feedback.
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmittedNotice({
-        role: activeRole,
-        message: `Validated ${activeRole.toUpperCase()} registration. Form data held in component state pending backend schema confirmation.`,
-      });
-    }, 600);
+    const payload = {
+      username: formData.username.trim(),
+      email: formData.email.trim(),
+      password: formData.password,
+      role: activeRole.toUpperCase(),
+
+      first_name,
+      last_name,
+    };
+
+    // --------------------------------------------------
+    // Patient
+    // --------------------------------------------------
+
+    if (activeRole === 'patient') {
+      if (formData.dateOfBirth) {
+        payload.date_of_birth = formData.dateOfBirth;
+      }
+    }
+
+    // --------------------------------------------------
+    // Doctor
+    // --------------------------------------------------
+
+    if (activeRole === 'doctor') {
+      if (formData.specialization) {
+        payload.specialization =
+          formData.specialization;
+      }
+
+      if (formData.mobileNumber.trim()) {
+        payload.phone =
+          formData.mobileNumber.trim();
+      }
+    }
+
+    // --------------------------------------------------
+    // IMPORTANT:
+    //
+    // We intentionally DO NOT send:
+    //
+    // Patient:
+    // - gender
+    // - mobileNumber
+    //
+    // Doctor:
+    // - registrationNumber
+    // - hospitalName
+    // - clinicAddress
+    //
+    // Admin:
+    // - designation
+    // - organizationName
+    //
+    // because these fields are not part of the
+    // confirmed backend registration contract.
+    // --------------------------------------------------
+
+    return payload;
   };
 
-  // Left Column Hero Content (Figma Screen 5)
+  // --------------------------------------------------
+  // Extract backend error
+  // --------------------------------------------------
+
+  const getBackendErrorMessage = (error) => {
+    const responseData = error?.response?.data;
+
+    if (!responseData) {
+      return (
+        error?.message ||
+        'Unable to connect to the server. Please try again.'
+      );
+    }
+
+    if (typeof responseData === 'string') {
+      return responseData;
+    }
+
+    if (responseData.detail) {
+      return responseData.detail;
+    }
+
+    if (responseData.message) {
+      return responseData.message;
+    }
+
+    // Django-style field errors
+    if (typeof responseData === 'object') {
+      const messages = [];
+
+      Object.entries(responseData).forEach(
+        ([field, value]) => {
+          if (Array.isArray(value)) {
+            messages.push(
+              `${field}: ${value.join(', ')}`
+            );
+          } else if (typeof value === 'string') {
+            messages.push(`${field}: ${value}`);
+          }
+        }
+      );
+
+      if (messages.length > 0) {
+        return messages.join(' | ');
+      }
+    }
+
+    return 'Registration failed. Please check your details and try again.';
+  };
+
+  // --------------------------------------------------
+  // Submit
+  // --------------------------------------------------
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setApiError(null);
+    setSubmittedNotice(null);
+
+    try {
+      const payload = buildRegistrationPayload();
+
+      console.log(
+        'MediSetu registration payload:',
+        payload
+      );
+
+      // REAL BACKEND CALL
+      const response =
+        await authService.register(payload);
+
+      console.log(
+        'Registration successful:',
+        response
+      );
+
+      setSubmittedNotice({
+        type: 'success',
+        message:
+          'Account created successfully. Redirecting to login...',
+      });
+
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        navigate('/login');
+      }, 1000);
+    } catch (error) {
+      console.error(
+        'Registration failed:',
+        error
+      );
+
+      setApiError(
+        getBackendErrorMessage(error)
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // --------------------------------------------------
+  // Left Hero
+  // --------------------------------------------------
+
   const leftHeroContent = (
     <div className="space-y-6">
-      <Link to="/" className="inline-block hover:opacity-95 transition-opacity">
+      <Link
+        to="/"
+        className="inline-block hover:opacity-95 transition-opacity"
+      >
         <MediSetuLogo size="md" />
       </Link>
 
@@ -192,6 +530,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
           Better Health <br />
           Starts Here
         </h2>
+
         <p className="text-sm lg:text-base text-medisetu-muted mt-2 max-w-sm leading-relaxed">
           Join MediSetu and take control of your health journey.
         </p>
@@ -203,20 +542,38 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
     </div>
   );
 
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
+
   return (
-    <AuthLayout leftContent={activeRole === 'patient' ? leftHeroContent : null}>
+    <AuthLayout
+      leftContent={
+        activeRole === 'patient'
+          ? leftHeroContent
+          : null
+      }
+    >
       <div className="space-y-5">
-        {/* Top Back Navigation & Header */}
+
+        {/* Top Navigation */}
         <div className="flex items-center justify-between">
-          <BackButton onClick={() => navigate(-1)} />
+          <BackButton
+            onClick={() => navigate(-1)}
+          />
+
           <Link
             to="/login"
             className="text-xs font-semibold text-medisetu-primary hover:underline"
           >
-            Already have an account? <span className="font-bold">Login</span>
+            Already have an account?{' '}
+            <span className="font-bold">
+              Login
+            </span>
           </Link>
         </div>
 
+        {/* Heading */}
         <div>
           <h1 className="text-2xl font-bold text-medisetu-navy">
             {activeRole === 'doctor'
@@ -225,6 +582,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
               ? 'Create Admin Account'
               : 'Create your account'}
           </h1>
+
           <p className="text-xs sm:text-sm text-medisetu-muted mt-1">
             {activeRole === 'doctor'
               ? "Join MediSetu and start making a difference in people's lives."
@@ -234,26 +592,57 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
           </p>
         </div>
 
-        {/* Role Switcher Tabs (Screen 5 & 7) */}
+        {/* Role Tabs */}
         <SegmentedTabs
           tabs={[
-            { id: 'patient', label: 'Patient', icon: User },
-            { id: 'doctor', label: 'Doctor', icon: Stethoscope },
-            { id: 'admin', label: 'Admin', icon: Building2 },
+            {
+              id: 'patient',
+              label: 'Patient',
+              icon: User,
+            },
+            {
+              id: 'doctor',
+              label: 'Doctor',
+              icon: Stethoscope,
+            },
+            {
+              id: 'admin',
+              label: 'Admin',
+              icon: Building2,
+            },
           ]}
           activeTab={activeRole}
           onChange={handleRoleChange}
         />
 
-        {submittedNotice && (
+        {/* Success Message */}
+        {submittedNotice?.type === 'success' && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs">
-            <span className="font-bold">Frontend Validated:</span> {submittedNotice.message}
+            <span className="font-bold">
+              Registration Successful:
+            </span>{' '}
+            {submittedNotice.message}
           </div>
         )}
 
+        {/* API Error */}
+        {apiError && (
+          <ErrorAlert
+            title="Registration Failed"
+            message={apiError}
+            onDismiss={() =>
+              setApiError(null)
+            }
+          />
+        )}
+
+        {/* Admin Info */}
         {activeRole === 'admin' && (
           <div className="p-3 bg-blue-50/70 border border-blue-200/70 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-medisetu-slate">
-            <span>Learn about our enterprise platform & features:</span>
+            <span>
+              Learn about our enterprise platform & features:
+            </span>
+
             <Link
               to="/register/admin"
               className="text-medisetu-primary font-bold hover:underline flex-shrink-0"
@@ -264,8 +653,25 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
         )}
 
         {/* Registration Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
-          {/* Common Fields */}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-3.5"
+          noValidate
+        >
+
+          {/* Username */}
+          <InputField
+            id="username"
+            name="username"
+            placeholder="Username"
+            icon={AtSign}
+            value={formData.username}
+            onChange={handleChange}
+            error={errors.username}
+            required
+          />
+
+          {/* Full Name */}
           <InputField
             id="fullName"
             name="fullName"
@@ -277,6 +683,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
             required
           />
 
+          {/* Mobile */}
           <InputField
             id="mobileNumber"
             name="mobileNumber"
@@ -289,6 +696,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
             required
           />
 
+          {/* Email */}
           <InputField
             id="email"
             name="email"
@@ -301,7 +709,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
             required
           />
 
-          {/* Patient Specific Fields (Screen 5) */}
+          {/* Patient Fields */}
           {activeRole === 'patient' && (
             <>
               <InputField
@@ -321,7 +729,11 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
                 name="gender"
                 placeholder="Gender"
                 icon={User}
-                options={['Male', 'Female', 'Other']}
+                options={[
+                  'Male',
+                  'Female',
+                  'Other',
+                ]}
                 value={formData.gender}
                 onChange={handleChange}
                 error={errors.gender}
@@ -330,7 +742,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
             </>
           )}
 
-          {/* Doctor Specific Fields (Screen 7 Left) */}
+          {/* Doctor Fields */}
           {activeRole === 'doctor' && (
             <>
               <InputField
@@ -387,7 +799,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
             </>
           )}
 
-          {/* Admin Specific Fields (Screen 7 Right) */}
+          {/* Admin Fields */}
           {activeRole === 'admin' && (
             <>
               <SelectDropdown
@@ -421,7 +833,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
             </>
           )}
 
-          {/* Password Fields */}
+          {/* Password */}
           <PasswordInput
             id="password"
             name="password"
@@ -432,6 +844,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
             required
           />
 
+          {/* Confirm Password */}
           <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
@@ -442,7 +855,7 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
             required
           />
 
-          {/* Terms Checkbox */}
+          {/* Terms */}
           <div className="pt-1">
             <Checkbox
               id="agreeTerms"
@@ -452,19 +865,30 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
               error={errors.agreeTerms}
             >
               I agree to the{' '}
-              <a href="#terms" className="text-medisetu-primary font-semibold hover:underline">
+              <a
+                href="#terms"
+                className="text-medisetu-primary font-semibold hover:underline"
+              >
                 Terms & Conditions
               </a>{' '}
               and{' '}
-              <a href="#privacy" className="text-medisetu-primary font-semibold hover:underline">
+              <a
+                href="#privacy"
+                className="text-medisetu-primary font-semibold hover:underline"
+              >
                 Privacy Policy
               </a>
             </Checkbox>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <div className="pt-2">
-            <PrimaryButton fullWidth type="submit" loading={isSubmitting} size="lg">
+            <PrimaryButton
+              fullWidth
+              type="submit"
+              loading={isSubmitting}
+              size="lg"
+            >
               {activeRole === 'doctor'
                 ? 'Create Doctor Account →'
                 : activeRole === 'admin'
@@ -474,11 +898,14 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
           </div>
         </form>
 
-        {/* Footer Link */}
+        {/* Footer */}
         <div className="text-center pt-2">
           <span className="text-xs text-medisetu-muted">
             Already have an account?{' '}
-            <Link to="/login" className="text-medisetu-primary font-bold hover:underline">
+            <Link
+              to="/login"
+              className="text-medisetu-primary font-bold hover:underline"
+            >
               Login
             </Link>
           </span>

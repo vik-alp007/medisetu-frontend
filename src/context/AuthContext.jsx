@@ -1,53 +1,127 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from 'react';
+
 import { authService } from '../services/authService';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem('medisetu_access_token') || null);
+  const [token, setToken] = useState(
+    () =>
+      localStorage.getItem(
+        'medisetu_access_token'
+      ) || null
+  );
+
   const [user, setUser] = useState(null);
-  const [role, setRole] = useState(() => localStorage.getItem('medisetu_role') || 'patient');
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [role, setRole] = useState(
+    () =>
+      localStorage.getItem(
+        'medisetu_role'
+      ) || 'patient'
+  );
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  // --------------------------------------------------
+  // Logout
+  // --------------------------------------------------
 
   const logout = () => {
-    localStorage.removeItem('medisetu_access_token');
-    localStorage.removeItem('medisetu_role');
+    localStorage.removeItem(
+      'medisetu_access_token'
+    );
+
+    localStorage.removeItem(
+      'medisetu_refresh_token'
+    );
+
+    localStorage.removeItem(
+      'medisetu_role'
+    );
+
     setToken(null);
     setUser(null);
     setRole('patient');
   };
 
-  const login = (newToken, userData, userRole = 'patient') => {
-    localStorage.setItem('medisetu_access_token', newToken);
-    localStorage.setItem('medisetu_role', userRole);
+  // --------------------------------------------------
+  // Login
+  // --------------------------------------------------
+
+  const login = (
+    newToken,
+    userData,
+    userRole = 'patient'
+  ) => {
+    localStorage.setItem(
+      'medisetu_access_token',
+      newToken
+    );
+
+    localStorage.setItem(
+      'medisetu_role',
+      userRole
+    );
+
     setToken(newToken);
     setUser(userData);
     setRole(userRole);
   };
 
-  // Sync token from localStorage and fetch current user if token exists
+  // --------------------------------------------------
+  // Restore session
+  // --------------------------------------------------
+
   useEffect(() => {
     let isMounted = true;
+
     const initializeAuth = async () => {
       if (token) {
         try {
-          const userData = await authService.getCurrentUser();
+          const userData =
+            await authService.getCurrentUser();
+
           if (isMounted) {
             setUser(userData);
+
             if (userData?.role) {
-              setRole(userData.role);
-              localStorage.setItem('medisetu_role', userData.role);
+              const backendRole =
+                userData.role.toUpperCase();
+
+              setRole(backendRole);
+
+              localStorage.setItem(
+                'medisetu_role',
+                backendRole
+              );
             }
           }
         } catch (err) {
-          console.warn('Session expired or invalid token:', err.message);
-          if (isMounted) logout();
+          console.warn(
+            'Session expired or invalid token:',
+            err.message
+          );
+
+          if (isMounted) {
+            logout();
+          }
         }
       }
-      if (isMounted) setIsLoading(false);
+
+      if (isMounted) {
+        setIsLoading(false);
+      }
     };
 
     initializeAuth();
+
     return () => {
       isMounted = false;
     };
@@ -72,9 +146,14 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(AuthContext);
+
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error(
+      'useAuth must be used within an AuthProvider'
+    );
   }
+
   return context;
 };
