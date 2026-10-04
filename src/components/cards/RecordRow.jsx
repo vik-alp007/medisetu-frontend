@@ -59,7 +59,7 @@ export const RecordRow = ({
 
   return (
     <div
-      className={`w-full bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 flex items-center justify-between gap-4 hover:border-blue-200 transition-all duration-150 ${className}`}
+      className={`w-full bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3.5 sm:p-4 flex items-center justify-between gap-4 hover:border-blue-200 dark:hover:border-blue-750 transition-all duration-150 ${className}`}
     >
       <div className="flex items-center gap-3.5">
         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${bg}`}>
@@ -67,10 +67,10 @@ export const RecordRow = ({
         </div>
 
         <div className="flex flex-col">
-          <h4 className="text-sm sm:text-base font-bold text-medisetu-navy leading-tight">
+          <h4 className="text-sm sm:text-base font-bold text-medisetu-navy dark:text-white leading-tight">
             {title}
           </h4>
-          <span className="text-xs text-medisetu-muted mt-0.5">{date}</span>
+          <span className="text-xs text-medisetu-muted dark:text-slate-400 mt-0.5">{date}</span>
         </div>
       </div>
 

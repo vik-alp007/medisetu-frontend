@@ -12,8 +12,31 @@ export const CalendarWidget = ({
   onSelectDate,
   className = '',
 }) => {
-  const [currentMonth, setCurrentMonth] = useState(selectedMonth);
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(8); // September (0-indexed)
   const [currentYear, setCurrentYear] = useState(selectedYear);
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const handlePrevMonth = () => {
+    if (currentMonthIndex === 0) {
+      setCurrentMonthIndex(11);
+      setCurrentYear((y) => y - 1);
+    } else {
+      setCurrentMonthIndex((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonthIndex === 11) {
+      setCurrentMonthIndex(0);
+      setCurrentYear((y) => y + 1);
+    } else {
+      setCurrentMonthIndex((m) => m + 1);
+    }
+  };
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -59,26 +82,28 @@ export const CalendarWidget = ({
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs ${className}`}
+      className={`bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-xs ${className}`}
     >
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
+          onClick={handlePrevMonth}
           aria-label="Previous month"
-          className="p-1 rounded-lg text-slate-400 hover:text-medisetu-navy hover:bg-slate-50 transition-colors"
+          className="p-1 rounded-lg text-slate-400 hover:text-medisetu-navy dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <span className="text-sm sm:text-base font-bold text-medisetu-navy">
-          {currentMonth} {currentYear}
+        <span className="text-sm sm:text-base font-bold text-medisetu-navy dark:text-white">
+          {months[currentMonthIndex]} {currentYear}
         </span>
 
         <button
           type="button"
+          onClick={handleNextMonth}
           aria-label="Next month"
-          className="p-1 rounded-lg text-slate-400 hover:text-medisetu-navy hover:bg-slate-50 transition-colors"
+          className="p-1 rounded-lg text-slate-400 hover:text-medisetu-navy dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -87,7 +112,7 @@ export const CalendarWidget = ({
       {/* Weekday Labels */}
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
         {daysOfWeek.map((day) => (
-          <span key={day} className="text-xs font-semibold text-slate-400 py-1">
+          <span key={day} className="text-xs font-semibold text-slate-400 dark:text-slate-500 py-1">
             {day}
           </span>
         ))}
@@ -108,8 +133,8 @@ export const CalendarWidget = ({
                 isSelected
                   ? 'bg-medisetu-primary text-white font-bold shadow-xs'
                   : cell.isCurrentMonth
-                  ? 'text-medisetu-navy hover:bg-blue-50 hover:text-medisetu-primary'
-                  : 'text-slate-300 cursor-not-allowed'
+                  ? 'text-medisetu-navy dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-medisetu-primary dark:hover:text-blue-400'
+                  : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
               }`}
             >
               {cell.day}

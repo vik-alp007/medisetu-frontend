@@ -29,7 +29,7 @@ export const SegmentedTabs = ({
 
   return (
     <div
-      className={`bg-slate-100/90 border border-slate-200/70 inline-flex items-center ${
+      className={`bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700 inline-flex items-center ${
         fullWidth ? 'w-full' : ''
       } ${sizeStyles[size]} ${className}`}
       role="tablist"
@@ -52,11 +52,11 @@ export const SegmentedTabs = ({
             } ${
               isActive
                 ? 'bg-medisetu-primary text-white font-semibold shadow-xs'
-                : 'text-medisetu-muted hover:text-medisetu-navy hover:bg-white/50'
+                : 'text-medisetu-muted dark:text-slate-400 hover:text-medisetu-navy dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50'
             }`}
           >
             {Icon && (
-              <span className={`transition-colors ${isActive ? 'text-white' : 'text-slate-400'}`}>
+              <span className={`transition-colors ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`}>
                 {React.isValidElement(Icon) ? Icon : <Icon className="w-4 h-4" />}
               </span>
             )}

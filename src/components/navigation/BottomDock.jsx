@@ -17,7 +17,7 @@ export const BottomDock = () => {
 
   return (
     <nav
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-white/95 backdrop-blur-md border border-slate-200 shadow-dock rounded-3xl px-6 py-2 flex items-center justify-around gap-6 sm:gap-12"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-dock rounded-3xl px-5 sm:px-8 py-2 flex items-center justify-around gap-4 sm:gap-10 transition-colors duration-200"
       aria-label="Bottom Navigation"
     >
       {navItems.map((item) => {
@@ -30,7 +30,7 @@ export const BottomDock = () => {
               `flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 relative group ${
                 isActive
                   ? 'text-medisetu-primary font-semibold'
-                  : 'text-medisetu-muted hover:text-medisetu-slate'
+                  : 'text-medisetu-muted dark:text-slate-400 hover:text-medisetu-slate dark:hover:text-slate-200'
               }`
             }
           >

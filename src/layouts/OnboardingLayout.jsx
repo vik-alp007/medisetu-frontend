@@ -2,6 +2,7 @@ import React from 'react';
 import PaginationDots from '../components/navigation/PaginationDots';
 import PrimaryButton from '../components/common/PrimaryButton';
 import LinkButton from '../components/common/LinkButton';
+import ThemeToggle from '../components/common/ThemeToggle';
 import { ArrowRight } from 'lucide-react';
 
 /**
@@ -22,15 +23,18 @@ export const OnboardingLayout = ({
   children,
 }) => {
   return (
-    <div className="w-full min-h-screen bg-gradient-to-b from-[#F5F9FF] via-[#E8F3FF] to-[#DCEBFF] flex flex-col justify-between relative overflow-hidden select-none">
-      {/* Top Ambient Glow */}
-      <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-white/70 to-transparent pointer-events-none" />
+    <div className="w-full min-h-screen bg-gradient-to-b from-[#F5F9FF] via-[#E8F3FF] to-[#DCEBFF] dark:from-[#0B132B] dark:via-[#0F172A] dark:to-[#070D1F] flex flex-col justify-between relative overflow-hidden select-none transition-colors duration-200">
+      {/* Top Ambient Glow & Theme Toggle */}
+      <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-white/70 dark:from-slate-900/40 to-transparent pointer-events-none" />
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-30">
+        <ThemeToggle />
+      </div>
 
       {/* Main Content: Split 2-Column Desktop Grid */}
       <div className="flex-1 max-w-[1280px] w-full mx-auto px-6 sm:px-12 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 z-10 py-12">
         {/* Left: Illustration Area */}
         <div className="w-full max-w-md lg:max-w-lg flex items-center justify-center relative">
-          <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-blue-100/50 absolute blur-2xl -z-0" />
+          <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-full bg-blue-100/50 dark:bg-blue-900/20 absolute blur-2xl -z-0" />
           <div className="relative z-10 w-full flex items-center justify-center">
             {illustration}
           </div>
@@ -38,12 +42,12 @@ export const OnboardingLayout = ({
 
         {/* Right: Copy & Stepper */}
         <div className="w-full max-w-md lg:max-w-lg flex flex-col items-center lg:items-start text-center lg:text-left space-y-4">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-medisetu-navy tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-medisetu-navy dark:text-white tracking-tight leading-tight">
             {titlePrefix}{' '}
             <span className="text-medisetu-teal">{titleHighlight}</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-medisetu-muted max-w-md leading-relaxed">
+          <p className="text-sm sm:text-base text-medisetu-muted dark:text-slate-300 max-w-md leading-relaxed">
             {description}
           </p>
 
@@ -61,7 +65,7 @@ export const OnboardingLayout = ({
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="w-full border-t border-blue-100/80 bg-white/70 backdrop-blur-md py-4 px-6 sm:px-12 z-20">
+      <div className="w-full border-t border-blue-100/80 dark:border-slate-800 bg-white/70 dark:bg-[#0F172A]/80 backdrop-blur-md py-4 px-6 sm:px-12 z-20">
         <div className="max-w-[1280px] mx-auto flex items-center justify-between">
           <LinkButton variant="muted" onClick={onSkip} size="sm">
             Skip

@@ -52,19 +52,19 @@ export const EmergencyCard = ({
   // Mode 2: Emergency Action Card (Screen 15)
   return (
     <div
-      className={`w-full bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 flex flex-col gap-4 shadow-xs ${className}`}
+      className={`w-full bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 flex flex-col gap-4 shadow-xs ${className}`}
     >
       <div className="flex items-center gap-3.5">
         {Icon && (
-          <div className="w-12 h-12 rounded-2xl bg-red-50 text-medisetu-danger flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-950/40 text-medisetu-danger flex items-center justify-center flex-shrink-0">
             {React.isValidElement(Icon) ? Icon : <Icon className="w-6 h-6" />}
           </div>
         )}
         <div className="flex flex-col">
-          <h3 className="text-base sm:text-lg font-bold text-medisetu-navy leading-tight">
+          <h3 className="text-base sm:text-lg font-bold text-medisetu-navy dark:text-white leading-tight">
             {title}
           </h3>
-          <p className="text-xs sm:text-sm text-medisetu-muted mt-0.5">
+          <p className="text-xs sm:text-sm text-medisetu-muted dark:text-slate-400 mt-0.5">
             {subtitle}
           </p>
         </div>

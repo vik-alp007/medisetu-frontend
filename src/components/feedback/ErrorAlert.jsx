@@ -15,16 +15,16 @@ export const ErrorAlert = ({
   return (
     <div
       role="alert"
-      className={`w-full bg-red-50/80 border border-red-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 text-medisetu-danger ${className}`}
+      className={`w-full bg-red-50/80 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 text-medisetu-danger dark:text-red-400 ${className}`}
     >
       <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
 
       <div className="flex-1">
-        <h4 className="text-sm font-bold text-red-900 leading-tight">
+        <h4 className="text-sm font-bold text-red-900 dark:text-red-200 leading-tight">
           {title}
         </h4>
         {message && (
-          <p className="text-xs sm:text-sm text-red-700 mt-1 leading-relaxed">
+          <p className="text-xs sm:text-sm text-red-700 dark:text-red-300 mt-1 leading-relaxed">
             {message}
           </p>
         )}

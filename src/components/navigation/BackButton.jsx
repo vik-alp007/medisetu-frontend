@@ -24,7 +24,7 @@ export const BackButton = ({ onClick, to, className = '', label }) => {
       type="button"
       onClick={handleClick}
       aria-label="Go back"
-      className={`inline-flex items-center gap-2 p-2 rounded-xl text-medisetu-navy hover:text-medisetu-primary hover:bg-blue-50/70 transition-all duration-150 active:scale-95 ${className}`}
+      className={`inline-flex items-center gap-2 p-2 rounded-xl text-medisetu-navy dark:text-slate-200 hover:text-medisetu-primary dark:hover:text-blue-400 hover:bg-blue-50/70 dark:hover:bg-slate-800 transition-all duration-150 active:scale-95 ${className}`}
     >
       <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
       {label && <span className="text-sm font-semibold">{label}</span>}

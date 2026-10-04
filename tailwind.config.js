@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -25,6 +26,14 @@ export default {
           bg: "#F4F9FF",            // Light healthcare ambient background
           border: "#E2E8F0",
           "border-focus": "#93C5FD",
+
+          // Dark Mode Specific Tokens
+          "dark-bg": "#0B132B",
+          "dark-surface": "#1E293B",
+          "dark-card": "#182234",
+          "dark-border": "#334155",
+          "dark-text": "#F8FAFC",
+          "dark-muted": "#94A3B8",
 
           // Status colors
           danger: "#EF4444",        // Emergency red, Ambulance CTA

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MediSetuLogo from '../common/MediSetuLogo';
+import ThemeToggle from '../common/ThemeToggle';
 
 /**
  * Public Navigation Bar
@@ -17,7 +18,7 @@ export const PublicNavbar = ({ activeLink = 'Home', onLoginClick }) => {
   ];
 
   return (
-    <header className="w-full bg-white/80 backdrop-blur-md border-b border-slate-100 py-3.5 px-4 sm:px-8 sticky top-0 z-40 transition-all">
+    <header className="w-full bg-white/80 dark:bg-[#0F172A]/85 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 py-3.5 px-4 sm:px-8 sticky top-0 z-40 transition-all">
       <div className="max-w-[1280px] mx-auto flex items-center justify-between">
         {/* Brand Logo */}
         <Link to="/" className="hover:opacity-95 transition-opacity">
@@ -33,7 +34,7 @@ export const PublicNavbar = ({ activeLink = 'Home', onLoginClick }) => {
               className={`text-sm font-medium transition-colors duration-150 ${
                 activeLink === link.label
                   ? 'text-medisetu-primary font-semibold'
-                  : 'text-medisetu-slate hover:text-medisetu-primary'
+                  : 'text-medisetu-slate dark:text-slate-300 hover:text-medisetu-primary dark:hover:text-blue-400'
               }`}
             >
               {link.label}
@@ -41,8 +42,9 @@ export const PublicNavbar = ({ activeLink = 'Home', onLoginClick }) => {
           ))}
         </nav>
 
-        {/* Outline Login Button */}
+        {/* Right Actions: Theme Toggle + Outline Login Button */}
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <button
             type="button"
             onClick={onLoginClick || (() => navigate('/login'))}

@@ -16,17 +16,17 @@ export const EmptyState = ({
 }) => {
   return (
     <div
-      className={`w-full bg-white rounded-3xl border border-slate-200/80 p-8 sm:p-12 flex flex-col items-center justify-center text-center ${className}`}
+      className={`w-full bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-8 sm:p-12 flex flex-col items-center justify-center text-center ${className}`}
     >
-      <div className="w-16 h-16 rounded-3xl bg-blue-50 text-medisetu-primary flex items-center justify-center mb-4">
+      <div className="w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-950/60 text-medisetu-primary dark:text-blue-400 flex items-center justify-center mb-4">
         {React.isValidElement(Icon) ? Icon : <Icon className="w-8 h-8" />}
       </div>
 
-      <h3 className="text-base sm:text-lg font-bold text-medisetu-navy leading-tight">
+      <h3 className="text-base sm:text-lg font-bold text-medisetu-navy dark:text-white leading-tight">
         {title}
       </h3>
 
-      <p className="text-xs sm:text-sm text-medisetu-muted max-w-sm mt-1 mb-5 leading-relaxed">
+      <p className="text-xs sm:text-sm text-medisetu-muted dark:text-slate-400 max-w-sm mt-1 mb-5 leading-relaxed">
         {message}
       </p>
 

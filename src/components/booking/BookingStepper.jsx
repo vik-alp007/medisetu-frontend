@@ -19,7 +19,7 @@ export const BookingStepper = ({
     <div className={`w-full max-w-md mx-auto py-2 ${className}`}>
       <div className="relative flex items-center justify-between">
         {/* Continuous Connecting Line */}
-        <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 -z-0" />
+        <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 dark:bg-slate-700 -z-0" />
 
         {/* Steps */}
         {steps.map((step) => {
@@ -31,10 +31,10 @@ export const BookingStepper = ({
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 ${
                   isCompleted
-                    ? 'bg-medisetu-primary text-white ring-4 ring-blue-50'
+                    ? 'bg-medisetu-primary text-white ring-4 ring-blue-50 dark:ring-blue-950/40'
                     : isActive
-                    ? 'bg-medisetu-primary text-white ring-4 ring-blue-100 shadow-xs'
-                    : 'bg-white border-2 border-slate-300 text-slate-400'
+                    ? 'bg-medisetu-primary text-white ring-4 ring-blue-100 dark:ring-blue-900/40 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-400'
                 }`}
               >
                 {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : step.number}
@@ -43,10 +43,10 @@ export const BookingStepper = ({
               <span
                 className={`text-xs mt-1.5 font-medium ${
                   isActive
-                    ? 'text-medisetu-primary font-bold'
+                    ? 'text-medisetu-primary dark:text-blue-400 font-bold'
                     : isCompleted
-                    ? 'text-medisetu-slate'
-                    : 'text-slate-400'
+                    ? 'text-medisetu-slate dark:text-slate-300'
+                    : 'text-slate-400 dark:text-slate-500'
                 }`}
               >
                 {step.label}

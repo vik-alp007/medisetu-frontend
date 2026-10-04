@@ -26,8 +26,8 @@ export const TimeSlotGrid = ({
             className={`py-2 px-3 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-150 select-none text-center ${
               isSelected
                 ? 'bg-medisetu-primary border-medisetu-primary text-white shadow-xs'
-                : 'bg-white border-slate-200 text-medisetu-slate hover:border-blue-300 hover:text-medisetu-primary'
-            } ${isDisabled ? 'opacity-40 cursor-not-allowed bg-slate-50' : 'active:scale-95'}`}
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-medisetu-slate dark:text-slate-200 hover:border-blue-300 dark:hover:border-blue-500 hover:text-medisetu-primary dark:hover:text-blue-400'
+            } ${isDisabled ? 'opacity-40 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40' : 'active:scale-95'}`}
           >
             {slot}
           </button>

@@ -18,7 +18,7 @@ export const PaymentCard = ({
   if (variant === 'outstanding') {
     return (
       <div
-        className={`w-full bg-red-50/60 border border-red-200/80 rounded-3xl p-5 sm:p-6 flex flex-col gap-4 shadow-xs ${className}`}
+        className={`w-full bg-red-50/60 dark:bg-red-950/25 border border-red-200/80 dark:border-red-900/50 rounded-3xl p-5 sm:p-6 flex flex-col gap-4 shadow-xs ${className}`}
       >
         <div className="flex items-center justify-between">
           <span className="text-xs sm:text-sm font-semibold text-medisetu-danger">
@@ -41,14 +41,14 @@ export const PaymentCard = ({
   // Mode 2: Previous Payments Row Item (Screen 16)
   return (
     <div
-      className={`w-full bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 flex items-center justify-between gap-4 ${className}`}
+      className={`w-full bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3.5 sm:p-4 flex items-center justify-between gap-4 ${className}`}
     >
       <div className="flex flex-col">
-        <span className="text-base sm:text-lg font-bold text-medisetu-navy">
+        <span className="text-base sm:text-lg font-bold text-medisetu-navy dark:text-white">
           ₹{amount?.toLocaleString() || '0'}
         </span>
         {date && (
-          <span className="text-xs text-medisetu-muted mt-0.5">{date}</span>
+          <span className="text-xs text-medisetu-muted dark:text-slate-400 mt-0.5">{date}</span>
         )}
       </div>
 

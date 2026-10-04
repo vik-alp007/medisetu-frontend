@@ -21,6 +21,7 @@ export { default as OutlineButton } from './common/OutlineButton';
 export { default as DangerButton } from './common/DangerButton';
 export { default as IconButton } from './common/IconButton';
 export { default as LinkButton } from './common/LinkButton';
+export { default as ThemeToggle } from './common/ThemeToggle';
 
 // Cards & Badges
 export { default as PastelActionCard } from './cards/PastelActionCard';

@@ -115,13 +115,13 @@ export const PatientDashboardScreen = () => {
         {/* Search Shortcut Bar */}
         <div 
           onClick={() => navigate('/doctors')}
-          className="w-full bg-white rounded-2xl border border-slate-200/80 px-4 py-3 shadow-xs flex items-center justify-between cursor-pointer hover:border-blue-300 transition-colors"
+          className="w-full bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200/80 dark:border-slate-800 px-4 py-3 shadow-xs flex items-center justify-between cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
         >
-          <div className="flex items-center gap-3 text-medisetu-muted">
-            <Search className="w-5 h-5 text-medisetu-primary" />
+          <div className="flex items-center gap-3 text-medisetu-muted dark:text-slate-400">
+            <Search className="w-5 h-5 text-medisetu-primary dark:text-blue-400" />
             <span className="text-sm">Search doctors, specialties, or clinics...</span>
           </div>
-          <span className="text-xs bg-blue-50 text-medisetu-primary font-semibold px-2.5 py-1 rounded-lg">
+          <span className="text-xs bg-blue-50 dark:bg-blue-950/60 text-medisetu-primary dark:text-blue-400 font-semibold px-2.5 py-1 rounded-lg">
             Find
           </span>
         </div>
@@ -138,7 +138,7 @@ export const PatientDashboardScreen = () => {
         {/* Recommended Specialists / Categories (Screen 8) */}
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-base sm:text-lg font-bold text-medisetu-navy">
+            <h2 className="text-base sm:text-lg font-bold text-medisetu-navy dark:text-white">
               Recommended Specialists
             </h2>
             <LinkButton to="/doctors" size="sm">
@@ -166,7 +166,7 @@ export const PatientDashboardScreen = () => {
         {/* Upcoming Appointment Section (Screen 8) */}
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-base sm:text-lg font-bold text-medisetu-navy">
+            <h2 className="text-base sm:text-lg font-bold text-medisetu-navy dark:text-white">
               Upcoming Appointment
             </h2>
             <LinkButton to="/doctors" size="sm">
@@ -188,7 +188,7 @@ export const PatientDashboardScreen = () => {
               onClick={() => navigate('/doctors/1')}
             />
           ) : (
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 text-center text-sm text-medisetu-muted">
+            <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 text-center text-sm text-medisetu-muted dark:text-slate-400">
               No upcoming appointments scheduled.{' '}
               <LinkButton to="/doctors" className="inline font-semibold">
                 Find a doctor
@@ -199,7 +199,7 @@ export const PatientDashboardScreen = () => {
 
         {/* Quick Health Actions Navigation Grid */}
         <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold text-medisetu-navy px-1">
+          <h2 className="text-base sm:text-lg font-bold text-medisetu-navy dark:text-white px-1">
             Quick Services
           </h2>
 
@@ -207,12 +207,12 @@ export const PatientDashboardScreen = () => {
             <button
               type="button"
               onClick={() => navigate('/doctors')}
-              className="bg-white hover:bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-xs transition-all active:scale-[0.98]"
+              className="bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-xs transition-all active:scale-[0.98]"
             >
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-medisetu-primary flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-medisetu-primary dark:text-blue-400 flex items-center justify-center">
                 <Calendar className="w-5 h-5" />
               </div>
-              <span className="text-xs sm:text-sm font-semibold text-medisetu-navy">
+              <span className="text-xs sm:text-sm font-semibold text-medisetu-navy dark:text-white">
                 Book Doctor
               </span>
             </button>
@@ -220,12 +220,12 @@ export const PatientDashboardScreen = () => {
             <button
               type="button"
               onClick={() => navigate('/records')}
-              className="bg-white hover:bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-xs transition-all active:scale-[0.98]"
+              className="bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-xs transition-all active:scale-[0.98]"
             >
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                 <FileText className="w-5 h-5" />
               </div>
-              <span className="text-xs sm:text-sm font-semibold text-medisetu-navy">
+              <span className="text-xs sm:text-sm font-semibold text-medisetu-navy dark:text-white">
                 Medical Records
               </span>
             </button>
@@ -233,12 +233,12 @@ export const PatientDashboardScreen = () => {
             <button
               type="button"
               onClick={() => navigate('/prescriptions')}
-              className="bg-white hover:bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-xs transition-all active:scale-[0.98]"
+              className="bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-xs transition-all active:scale-[0.98]"
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                 <Pill className="w-5 h-5" />
               </div>
-              <span className="text-xs sm:text-sm font-semibold text-medisetu-navy">
+              <span className="text-xs sm:text-sm font-semibold text-medisetu-navy dark:text-white">
                 Prescriptions
               </span>
             </button>
@@ -246,12 +246,12 @@ export const PatientDashboardScreen = () => {
             <button
               type="button"
               onClick={() => navigate('/bills')}
-              className="bg-white hover:bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-xs transition-all active:scale-[0.98]"
+              className="bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-xs transition-all active:scale-[0.98]"
             >
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                 <CreditCard className="w-5 h-5" />
               </div>
-              <span className="text-xs sm:text-sm font-semibold text-medisetu-navy">
+              <span className="text-xs sm:text-sm font-semibold text-medisetu-navy dark:text-white">
                 Bills & Payments
               </span>
             </button>

@@ -22,7 +22,7 @@ export const Checkbox = ({
     <div className={`flex flex-col gap-1 ${className}`}>
       <label
         htmlFor={checkboxId}
-        className={`flex items-start gap-2.5 cursor-pointer select-none text-xs sm:text-sm text-medisetu-slate ${
+        className={`flex items-start gap-2.5 cursor-pointer select-none text-xs sm:text-sm text-medisetu-slate dark:text-slate-300 ${
           disabled ? 'opacity-60 cursor-not-allowed' : ''
         }`}
       >
@@ -40,7 +40,7 @@ export const Checkbox = ({
             className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all duration-150 ${
               checked
                 ? 'bg-medisetu-primary border-medisetu-primary text-white shadow-xs'
-                : 'bg-white border-slate-300 hover:border-slate-400'
+                : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500'
             } ${error ? 'border-medisetu-danger' : ''}`}
           >
             {checked && <Check className="w-3 h-3 stroke-[3]" />}

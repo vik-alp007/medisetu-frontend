@@ -26,9 +26,9 @@ export const OutlineButton = ({
 
   const variantStyles = {
     primary:
-      'border border-medisetu-primary text-medisetu-primary hover:bg-blue-50/60 active:bg-blue-100/70',
+      'border border-medisetu-primary text-medisetu-primary hover:bg-blue-50/60 dark:hover:bg-blue-950/40 active:bg-blue-100/70',
     neutral:
-      'border border-slate-200 text-medisetu-slate hover:bg-slate-50 hover:border-slate-300',
+      'border border-slate-200 dark:border-slate-700 text-medisetu-slate dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600',
   };
 
   return (

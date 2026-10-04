@@ -27,6 +27,11 @@ export const FindDoctorsScreen = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [selectedSpecialty, setSelectedSpecialty] = useState(
+    searchParams.get('specialty') || 'All'
+  );
+  const [searchQuery, setSearchQuery] = useState('');
+
   const isMockMode = import.meta.env.VITE_USE_MOCK_DATA === 'true';
   const [doctorsList, setDoctorsList] = useState(isMockMode ? mockDoctors : []);
   const [loading, setLoading] = useState(true);
@@ -119,13 +124,13 @@ export const FindDoctorsScreen = () => {
           <ErrorAlert
             title="Registry Notice"
             message={errorNotice}
-            onDismiss={() => setErrorNotice(null)}
+            onRetry={fetchDoctors}
           />
         )}
 
         {/* Search Input Bar */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-medisetu-muted">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-medisetu-muted dark:text-slate-400">
             <Search className="w-5 h-5" />
           </div>
           <input
@@ -133,13 +138,13 @@ export const FindDoctorsScreen = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by doctor name, specialty, or condition..."
-            className="w-full pl-11 pr-10 py-3 bg-white border border-slate-200/90 rounded-2xl text-sm text-medisetu-navy placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-medisetu-primary transition-all shadow-xs"
+            className="w-full pl-11 pr-10 py-3 bg-white dark:bg-[#1E293B] border border-slate-200/90 dark:border-slate-800 rounded-2xl text-sm text-medisetu-navy dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-medisetu-primary transition-all shadow-xs"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             >
               <X className="w-4 h-4" />
             </button>
@@ -152,17 +157,18 @@ export const FindDoctorsScreen = () => {
             <FilterChip
               key={spec}
               label={spec}
-              isSelected={selectedSpecialty.toLowerCase() === spec.toLowerCase()}
+              isActive={selectedSpecialty.toLowerCase() === spec.toLowerCase()}
+              hasDropdown={false}
               onClick={() => handleSpecialtyChange(spec)}
             />
           ))}
         </div>
 
         {/* Doctor Count / Status */}
-        <div className="flex items-center justify-between px-1 text-xs text-medisetu-muted">
+        <div className="flex items-center justify-between px-1 text-xs text-medisetu-muted dark:text-slate-400">
           <span>Showing {filteredDoctors.length} available doctors</span>
           <span className="flex items-center gap-1">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-medisetu-primary" /> Verified Only
+            <SlidersHorizontal className="w-3.5 h-3.5 text-medisetu-primary dark:text-blue-400" /> Verified Only
           </span>
         </div>
 

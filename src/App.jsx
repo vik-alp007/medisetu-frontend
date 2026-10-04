@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import BareLayout from './layouts/BareLayout';
 
 // Public & Auth Pages (Phase 3)
@@ -31,56 +32,58 @@ import PatientProfileScreen from './pages/patient/PatientProfileScreen';
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Splash Screen (Screen 1) */}
-          <Route element={<BareLayout />}>
-            <Route path="/" element={<SplashScreen />} />
-          </Route>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Splash Screen (Screen 1) */}
+            <Route element={<BareLayout />}>
+              <Route path="/" element={<SplashScreen />} />
+            </Route>
 
-          {/* Onboarding Flow: 3 Slides in 1 Screen (Screens 2, 3, 4) */}
-          <Route path="/onboarding" element={<OnboardingScreen />} />
+            {/* Onboarding Flow: 3 Slides in 1 Screen (Screens 2, 3, 4) */}
+            <Route path="/onboarding" element={<OnboardingScreen />} />
 
-          {/* Registration Flows */}
-          {/* Patient Registration (Screen 5) */}
-          <Route path="/register" element={<RegisterScreen initialRole="patient" />} />
-          {/* Doctor Registration (Screen 7 Left) */}
-          <Route path="/register/doctor" element={<RegisterScreen initialRole="doctor" />} />
-          {/* Admin Registration Landing (Screen 6) */}
-          <Route path="/register/admin" element={<AdminLandingScreen />} />
-          {/* Admin Registration Form (Screen 7 Right) */}
-          <Route path="/register/admin-form" element={<RegisterScreen initialRole="admin" />} />
+            {/* Registration Flows */}
+            {/* Patient Registration (Screen 5) */}
+            <Route path="/register" element={<RegisterScreen initialRole="patient" />} />
+            {/* Doctor Registration (Screen 7 Left) */}
+            <Route path="/register/doctor" element={<RegisterScreen initialRole="doctor" />} />
+            {/* Admin Registration Landing (Screen 6) */}
+            <Route path="/register/admin" element={<AdminLandingScreen />} />
+            {/* Admin Registration Form (Screen 7 Right) */}
+            <Route path="/register/admin-form" element={<RegisterScreen initialRole="admin" />} />
 
-          {/* Login Screen */}
-          <Route path="/login" element={<LoginScreen />} />
+            {/* Login Screen */}
+            <Route path="/login" element={<LoginScreen />} />
 
-          {/* Component Showcase Gallery */}
-          <Route path="/components" element={<ComponentPreviewScreen />} />
+            {/* Component Showcase Gallery */}
+            <Route path="/components" element={<ComponentPreviewScreen />} />
 
-          {/* Patient Core Routes (Stage 1) */}
-          <Route path="/dashboard" element={<PatientDashboardScreen />} />
-          <Route path="/doctors" element={<FindDoctorsScreen />} />
-          <Route path="/doctors/:id" element={<DoctorProfileScreen />} />
-          <Route path="/appointments/book/:doctorId" element={<BookAppointmentScreen />} />
-          <Route path="/appointments/confirmation" element={<AppointmentConfirmationScreen />} />
+            {/* Patient Core Routes (Stage 1) */}
+            <Route path="/dashboard" element={<PatientDashboardScreen />} />
+            <Route path="/doctors" element={<FindDoctorsScreen />} />
+            <Route path="/doctors/:id" element={<DoctorProfileScreen />} />
+            <Route path="/appointments/book/:doctorId" element={<BookAppointmentScreen />} />
+            <Route path="/appointments/confirmation" element={<AppointmentConfirmationScreen />} />
 
-          {/* Remaining Patient Routes (Stage 2) */}
-          <Route path="/records" element={<MedicalRecordsScreen />} />
-          <Route path="/prescriptions" element={<PrescriptionsScreen />} />
-          <Route path="/emergency" element={<EmergencyScreen />} />
-          <Route path="/bills" element={<BillsScreen />} />
-          <Route path="/profile" element={<PatientProfileScreen />} />
+            {/* Remaining Patient Routes (Stage 2) */}
+            <Route path="/records" element={<MedicalRecordsScreen />} />
+            <Route path="/prescriptions" element={<PrescriptionsScreen />} />
+            <Route path="/emergency" element={<EmergencyScreen />} />
+            <Route path="/bills" element={<BillsScreen />} />
+            <Route path="/profile" element={<PatientProfileScreen />} />
 
-          {/* Backend Placeholder Dashboards */}
-          <Route path="/dashboard/doctor" element={<DoctorDashboardPlaceholder />} />
-          <Route path="/dashboard/admin" element={<AdminDashboardPlaceholder />} />
+            {/* Backend Placeholder Dashboards */}
+            <Route path="/dashboard/doctor" element={<DoctorDashboardPlaceholder />} />
+            <Route path="/dashboard/admin" element={<AdminDashboardPlaceholder />} />
 
-          {/* Catch-all Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            {/* Catch-all Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
