@@ -10,6 +10,9 @@ import Checkbox from '../../components/common/Checkbox';
 import PrimaryButton from '../../components/common/PrimaryButton';
 import BackButton from '../../components/navigation/BackButton';
 import DoctorHeroIllustration from '../../assets/illustrations/DoctorHeroIllustration';
+import ErrorAlert from '../../components/feedback/ErrorAlert';
+import { authService } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * LoginScreen
@@ -17,6 +20,7 @@ import DoctorHeroIllustration from '../../assets/illustrations/DoctorHeroIllustr
  */
 export const LoginScreen = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [activeRole, setActiveRole] = useState('patient');
   const [formData, setFormData] = useState({
     identifier: '', // Email or Phone
@@ -26,7 +30,7 @@ export const LoginScreen = () => {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedNotice, setSubmittedNotice] = useState(null);
+  const [apiError, setApiError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -36,6 +40,9 @@ export const LoginScreen = () => {
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+    if (apiError) {
+      setApiError(null);
     }
   };
 
@@ -54,21 +61,51 @@ export const LoginScreen = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handlePortalRedirect = (role) => {
+    if (role === 'doctor') {
+      navigate('/dashboard/doctor');
+    } else if (role === 'admin') {
+      navigate('/dashboard/admin');
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setSubmittedNotice(null);
+    setApiError(null);
 
-    // Frontend validation only — awaiting backend login payload schema
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmittedNotice({
+    try {
+      // Backend endpoint: POST /api/auth/login/
+      const payload = {
+        email: formData.identifier,
+        username: formData.identifier,
+        password: formData.password,
         role: activeRole,
-        message: `Validated ${activeRole.toUpperCase()} login. Awaiting backend POST /api/auth/login/ schema confirmation.`,
-      });
-    }, 600);
+      };
+
+      const res = await authService.login(payload);
+      const token = res?.access || res?.token || res?.access_token || res?.data?.access;
+      const userData = res?.user || { name: formData.identifier.split('@')[0], role: activeRole };
+
+      if (token) {
+        login(token, userData, activeRole);
+      }
+      handlePortalRedirect(activeRole);
+    } catch (err) {
+      console.warn('Login attempt returned error:', err.message);
+      setApiError(
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        err.message ||
+        'Authentication failed. Please verify your credentials or server connection.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const leftHeroContent = (
@@ -127,10 +164,12 @@ export const LoginScreen = () => {
           onChange={setActiveRole}
         />
 
-        {submittedNotice && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs">
-            <span className="font-bold">Frontend Validated:</span> {submittedNotice.message}
-          </div>
+        {apiError && (
+          <ErrorAlert
+            title="Sign In Failed"
+            message={apiError}
+            onDismiss={() => setApiError(null)}
+          />
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>

@@ -27,47 +27,48 @@ export const FindDoctorsScreen = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const selectedSpecialty = searchParams.get('specialty') || 'All';
-  const [searchQuery, setSearchQuery] = useState('');
-  const [doctorsList, setDoctorsList] = useState(mockDoctors);
-  const [loading, setLoading] = useState(false);
+  const isMockMode = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  const [doctorsList, setDoctorsList] = useState(isMockMode ? mockDoctors : []);
+  const [loading, setLoading] = useState(true);
   const [errorNotice, setErrorNotice] = useState(null);
 
   // Fetch doctors from backend (GET /api/doctors/)
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchDoctors = async () => {
-      try {
-        setLoading(true);
-        setErrorNotice(null);
-        const params = selectedSpecialty !== 'All' ? { specialty: selectedSpecialty } : {};
-        // Backend endpoint: GET /api/doctors/
-        const data = await doctorService.getDoctors(params);
-        if (isMounted && data) {
-          // If backend returns array, update list (TODO: Map complete backend response schema when published)
-          if (Array.isArray(data) && data.length > 0) {
-            setDoctorsList(data);
-          } else if (data.results && Array.isArray(data.results)) {
-            setDoctorsList(data.results);
-          }
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      setErrorNotice(null);
+      const params = selectedSpecialty !== 'All' ? { specialty: selectedSpecialty } : {};
+      // Backend endpoint: GET /api/doctors/
+      const data = await doctorService.getDoctors(params);
+      if (data) {
+        if (Array.isArray(data)) {
+          setDoctorsList(data);
+        } else if (data.results && Array.isArray(data.results)) {
+          setDoctorsList(data.results);
+        } else {
+          setDoctorsList([]);
         }
-      } catch (err) {
-        if (isMounted) {
-          console.warn('Backend doctors API not reachable:', err.message);
-          // Backend rule: Never silently replace real failure. Inform user if live connection failed.
-          setErrorNotice('Live doctor registry server unavailable. Showing offline directory.');
-          setDoctorsList(mockDoctors);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
       }
-    };
+    } catch (err) {
+      console.warn('Backend doctors API error:', err.message);
+      setErrorNotice(
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        err.message ||
+        'Unable to load doctors from server. Please check your connection.'
+      );
+      if (isMockMode) {
+        setDoctorsList(mockDoctors);
+      } else {
+        setDoctorsList([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchDoctors();
-    return () => {
-      isMounted = false;
-    };
   }, [selectedSpecialty]);
 
   const handleSpecialtyChange = (spec) => {
@@ -170,6 +171,13 @@ export const FindDoctorsScreen = () => {
           <div className="py-16 flex justify-center">
             <LoadingSpinner size="lg" />
           </div>
+        ) : errorNotice ? (
+          <EmptyState
+            title="Unable to Load Doctors"
+            description={errorNotice}
+            actionText="Try Again"
+            onAction={fetchDoctors}
+          />
         ) : filteredDoctors.length > 0 ? (
           <div className="space-y-3.5">
             {filteredDoctors.map((doc) => (

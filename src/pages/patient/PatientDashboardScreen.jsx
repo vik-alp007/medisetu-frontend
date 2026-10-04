@@ -53,7 +53,13 @@ export const PatientDashboardScreen = () => {
         } catch (err) {
           if (isMounted) {
             console.warn('Backend patient dashboard API not reachable or returned error:', err.message);
-            setApiError('Live backend server is unavailable or requires active session. Showing preview data.');
+            setApiError(
+              err.response?.data?.detail || 
+              err.response?.data?.message || 
+              err.message || 
+              'Unable to sync live patient dashboard with hospital server.'
+            );
+            setDashboardData(null);
           }
         } finally {
           if (isMounted) setLoading(false);
@@ -67,9 +73,10 @@ export const PatientDashboardScreen = () => {
     };
   }, [isAuthenticated]);
 
-  // Merge backend data with fallback mock presentation (TODO: Map complete backend response schema when published)
-  const patientName = user?.name || dashboardData?.patient?.name || mockPatient.greetingName;
-  const upcomingApt = dashboardData?.upcoming_appointment || mockUpcomingAppointment;
+  // Use real API data when available; mock data allowed ONLY for initial demo construction or explicit VITE_USE_MOCK_DATA
+  const isMockMode = !isAuthenticated || import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  const patientName = user?.name || dashboardData?.patient?.name || (isMockMode ? mockPatient.greetingName : 'Patient');
+  const upcomingApt = dashboardData?.upcoming_appointment || (isMockMode && !apiError ? mockUpcomingAppointment : null);
 
   const specialistIcons = {
     cardio: Heart,

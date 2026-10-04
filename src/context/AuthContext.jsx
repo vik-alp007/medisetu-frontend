@@ -9,27 +9,13 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(() => localStorage.getItem('medisetu_role') || 'patient');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Sync token from localStorage and fetch current user if token exists
-  useEffect(() => {
-    const initializeAuth = async () => {
-      if (token) {
-        try {
-          const userData = await authService.getCurrentUser();
-          setUser(userData);
-          if (userData?.role) {
-            setRole(userData.role);
-            localStorage.setItem('medisetu_role', userData.role);
-          }
-        } catch (err) {
-          console.warn('Session expired or invalid token:', err.message);
-          logout();
-        }
-      }
-      setIsLoading(false);
-    };
-
-    initializeAuth();
-  }, [token]);
+  const logout = () => {
+    localStorage.removeItem('medisetu_access_token');
+    localStorage.removeItem('medisetu_role');
+    setToken(null);
+    setUser(null);
+    setRole('patient');
+  };
 
   const login = (newToken, userData, userRole = 'patient') => {
     localStorage.setItem('medisetu_access_token', newToken);
@@ -39,13 +25,33 @@ export const AuthProvider = ({ children }) => {
     setRole(userRole);
   };
 
-  const logout = () => {
-    localStorage.removeItem('medisetu_access_token');
-    localStorage.removeItem('medisetu_role');
-    setToken(null);
-    setUser(null);
-    setRole('patient');
-  };
+  // Sync token from localStorage and fetch current user if token exists
+  useEffect(() => {
+    let isMounted = true;
+    const initializeAuth = async () => {
+      if (token) {
+        try {
+          const userData = await authService.getCurrentUser();
+          if (isMounted) {
+            setUser(userData);
+            if (userData?.role) {
+              setRole(userData.role);
+              localStorage.setItem('medisetu_role', userData.role);
+            }
+          }
+        } catch (err) {
+          console.warn('Session expired or invalid token:', err.message);
+          if (isMounted) logout();
+        }
+      }
+      if (isMounted) setIsLoading(false);
+    };
+
+    initializeAuth();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   return (
     <AuthContext.Provider
