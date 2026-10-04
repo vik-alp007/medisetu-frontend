@@ -4,14 +4,10 @@ import {
   FileText, 
   Upload, 
   Search, 
-  Filter, 
   Download, 
-  Eye, 
   X, 
   CheckCircle,
-  FileSpreadsheet,
-  Calendar,
-  AlertCircle
+  FileSpreadsheet
 } from 'lucide-react';
 
 import PatientLayout from '../../layouts/PatientLayout';

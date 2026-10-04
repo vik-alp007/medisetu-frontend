@@ -6,19 +6,13 @@ import {
   Building2, 
   Droplet, 
   AlertTriangle, 
-  ShieldAlert, 
   MapPin, 
-  Clock, 
-  HeartHandshake
+  Clock
 } from 'lucide-react';
 
 import PatientLayout from '../../layouts/PatientLayout';
 import TopHeader from '../../components/navigation/TopHeader';
 import EmergencyCard from '../../components/cards/EmergencyCard';
-import PrimaryButton from '../../components/common/PrimaryButton';
-import DangerButton from '../../components/common/DangerButton';
-
-import { mockEmergencyContacts } from '../../data/mockData';
 
 export const EmergencyScreen = () => {
   const handleCall = (number) => {

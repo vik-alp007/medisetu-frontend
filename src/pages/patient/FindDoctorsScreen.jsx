@@ -27,19 +27,11 @@ export const FindDoctorsScreen = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const specialtyParam = searchParams.get('specialty') || 'All';
-  const [selectedSpecialty, setSelectedSpecialty] = useState(specialtyParam);
+  const selectedSpecialty = searchParams.get('specialty') || 'All';
   const [searchQuery, setSearchQuery] = useState('');
   const [doctorsList, setDoctorsList] = useState(mockDoctors);
   const [loading, setLoading] = useState(false);
   const [errorNotice, setErrorNotice] = useState(null);
-
-  // Sync state if URL query param changes
-  useEffect(() => {
-    if (searchParams.get('specialty')) {
-      setSelectedSpecialty(searchParams.get('specialty'));
-    }
-  }, [searchParams]);
 
   // Fetch doctors from backend (GET /api/doctors/)
   useEffect(() => {

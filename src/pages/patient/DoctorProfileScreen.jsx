@@ -10,7 +10,6 @@ import {
   Users, 
   ShieldCheck, 
   HeartHandshake, 
-  Calendar,
   Languages,
   GraduationCap
 } from 'lucide-react';
@@ -19,7 +18,6 @@ import PatientLayout from '../../layouts/PatientLayout';
 import TopHeader from '../../components/navigation/TopHeader';
 import PrimaryButton from '../../components/common/PrimaryButton';
 import StatusBadge from '../../components/common/StatusBadge';
-import InfoCard from '../../components/cards/InfoCard';
 import TimeSlotGrid from '../../components/booking/TimeSlotGrid';
 import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';

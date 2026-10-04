@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Pill, 
   Calendar, 
   Download, 
-  RefreshCw, 
   FileText, 
   CheckCircle2, 
-  AlertCircle,
-  Clock,
-  Sparkles,
   ShoppingBag
 } from 'lucide-react';
 
@@ -21,7 +17,6 @@ import PrimaryButton from '../../components/common/PrimaryButton';
 import OutlineButton from '../../components/common/OutlineButton';
 import SegmentedTabs from '../../components/common/SegmentedTabs';
 import EmptyState from '../../components/feedback/EmptyState';
-import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { prescriptionService } from '../../services/prescriptionService';
@@ -31,7 +26,6 @@ import { getDoctorAvatar } from '../../utils/doctorAvatar';
 export const PrescriptionsScreen = () => {
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'history'
   const [prescriptionData, setPrescriptionData] = useState(mockPrescriptions);
-  const [loading, setLoading] = useState(false);
   const [apiNotice, setApiNotice] = useState(null);
   const [refillSuccess, setRefillSuccess] = useState(false);
 

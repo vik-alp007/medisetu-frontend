@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, Video, Building2, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 import PatientLayout from '../../layouts/PatientLayout';
 import TopHeader from '../../components/navigation/TopHeader';

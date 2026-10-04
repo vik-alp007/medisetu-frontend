@@ -6,7 +6,6 @@ import {
   Phone, 
   Mail, 
   Calendar, 
-  Heart, 
   ShieldAlert, 
   LogOut, 
   Edit3, 
@@ -24,7 +23,6 @@ import PrimaryButton from '../../components/common/PrimaryButton';
 import DangerButton from '../../components/common/DangerButton';
 import OutlineButton from '../../components/common/OutlineButton';
 import StatusBadge from '../../components/common/StatusBadge';
-import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { useAuth } from '../../context/AuthContext';
@@ -37,7 +35,6 @@ export const PatientProfileScreen = () => {
   const { user, logout, isAuthenticated } = useAuth();
 
   const [profile, setProfile] = useState(mockPatient);
-  const [loading, setLoading] = useState(false);
   const [apiNotice, setApiNotice] = useState(null);
 
   // Edit Profile Modal
@@ -54,7 +51,6 @@ export const PatientProfileScreen = () => {
     const fetchProfile = async () => {
       if (isAuthenticated) {
         try {
-          setLoading(true);
           setApiNotice(null);
           // Backend endpoint: GET /api/patients/my-profile/
           const data = await patientService.getMyProfile();
@@ -69,8 +65,6 @@ export const PatientProfileScreen = () => {
             console.warn('Backend patient profile fetch error or offline:', err.message);
             setApiNotice('Live profile server unavailable. Displaying cached patient credentials.');
           }
-        } finally {
-          if (isMounted) setLoading(false);
         }
       }
     };

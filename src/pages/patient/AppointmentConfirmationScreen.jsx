@@ -5,12 +5,8 @@ import {
   Calendar, 
   Clock, 
   MapPin, 
-  CheckCircle2, 
   Building2, 
-  Video, 
-  ArrowRight,
-  Download,
-  Share2
+  Video
 } from 'lucide-react';
 
 import PatientLayout from '../../layouts/PatientLayout';
