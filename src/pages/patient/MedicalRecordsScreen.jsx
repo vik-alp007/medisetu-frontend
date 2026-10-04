@@ -21,14 +21,13 @@ import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { recordService } from '../../services/recordService';
-import { mockMedicalRecords } from '../../data/mockData';
 
 const CATEGORIES = ['All', 'Reports', 'Prescriptions', 'Visits'];
 
 export const MedicalRecordsScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [records, setRecords] = useState(mockMedicalRecords);
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [apiNotice, setApiNotice] = useState(null);
 
@@ -60,9 +59,9 @@ export const MedicalRecordsScreen = () => {
         }
       } catch (err) {
         if (isMounted) {
-          console.warn('Backend medical records API error or offline:', err.message);
-          setApiNotice('Live records service unavailable. Displaying local medical records.');
-          setRecords(mockMedicalRecords);
+          console.error('Backend medical records API error:', err);
+          setApiNotice(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to load medical records from the hospital server.');
+          setRecords([]);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -177,7 +176,7 @@ export const MedicalRecordsScreen = () => {
             <FilterChip
               key={cat}
               label={cat}
-              isSelected={selectedCategory.toLowerCase() === cat.toLowerCase()}
+              isActive={selectedCategory.toLowerCase() === cat.toLowerCase()}
               onClick={() => setSelectedCategory(cat)}
             />
           ))}

@@ -24,17 +24,17 @@ import DangerButton from '../../components/common/DangerButton';
 import OutlineButton from '../../components/common/OutlineButton';
 import StatusBadge from '../../components/common/StatusBadge';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
+import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 
 import { useAuth } from '../../context/AuthContext';
 import { patientService } from '../../services/patientService';
-import { mockPatient } from '../../data/mockData';
 import { PatientAvatarIcon } from '../../utils/doctorAvatar';
 
 export const PatientProfileScreen = () => {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
 
-  const [profile, setProfile] = useState(mockPatient);
+  const [profile, setProfile] = useState(null);
   const [apiNotice, setApiNotice] = useState(null);
 
   // Edit Profile Modal
@@ -62,8 +62,9 @@ export const PatientProfileScreen = () => {
           }
         } catch (err) {
           if (isMounted) {
-            console.warn('Backend patient profile fetch error or offline:', err.message);
-            setApiNotice('Live profile server unavailable. Displaying cached patient credentials.');
+            console.error('Backend patient profile fetch error:', err);
+            setApiNotice(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to load your patient profile.');
+            setProfile(null);
           }
         }
       }
@@ -76,31 +77,34 @@ export const PatientProfileScreen = () => {
   }, [isAuthenticated]);
 
   const handleOpenEdit = () => {
-    setEditName(user?.name || profile.name);
-    setEditPhone(user?.mobile || profile.mobile);
+    if (!profile) return;
+    setEditName([user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.name || profile.name || '');
+    setEditPhone(user?.phone || user?.mobile || profile.mobile || '');
     setEditBloodGroup(profile.bloodGroup || 'O+');
     setShowEditModal(true);
   };
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
-    setProfile((prev) => ({
-      ...prev,
-      name: editName,
-      mobile: editPhone,
-      bloodGroup: editBloodGroup,
-    }));
-    setSavedSuccess(true);
-    setTimeout(() => {
-      setSavedSuccess(false);
-      setShowEditModal(false);
-    }, 1200);
+    setApiNotice('Profile editing is not connected yet because the backend team has not provided the patient profile update payload schema.');
   };
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  if (!profile) {
+    return (
+      <PatientLayout>
+        <div className="w-full max-w-xl mx-auto py-12 space-y-4">
+          <TopHeader title="Patient Profile" subtitle="Health credentials & account preferences" showBack backTo="/dashboard" />
+          {apiNotice ? <ErrorAlert title="Profile Status" message={apiNotice} onDismiss={() => setApiNotice(null)} /> : <LoadingSpinner size="lg" />}
+          <OutlineButton fullWidth onClick={() => window.location.reload()}>Retry</OutlineButton>
+        </div>
+      </PatientLayout>
+    );
+  }
 
   const personalInfoItems = [
     { icon: User, label: 'Full Legal Name', value: profile.name },

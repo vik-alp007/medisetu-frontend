@@ -16,7 +16,6 @@ import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { doctorService } from '../../services/doctorService';
 import { appointmentService } from '../../services/appointmentService';
-import { mockDoctors, mockPatient } from '../../data/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { getDoctorAvatar } from '../../utils/doctorAvatar';
 
@@ -39,8 +38,8 @@ export const BookAppointmentScreen = () => {
   const [selectedMonth, setSelectedMonth] = useState('September');
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedSlot, setSelectedSlot] = useState(preselectedSlot);
-  const [patientName, setPatientName] = useState(user?.name || mockPatient.name);
-  const [patientPhone, setPatientPhone] = useState(user?.mobile || mockPatient.mobile);
+  const [patientName, setPatientName] = useState([user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.name || '');
+  const [patientPhone, setPatientPhone] = useState(user?.phone || user?.mobile || '');
   const [symptoms, setSymptoms] = useState('');
 
   // Fetch Doctor details
@@ -60,12 +59,9 @@ export const BookAppointmentScreen = () => {
         }
       } catch (err) {
         if (isMounted) {
-          console.warn('Backend doctor fetch error, using local data:', err.message);
-          const found = mockDoctors.find((d) => String(d.id) === String(doctorId)) || mockDoctors[0];
-          setDoctor(found);
-          if (found?.availableSlots && !found.availableSlots.includes(selectedSlot)) {
-            setSelectedSlot(found.availableSlots[0]);
-          }
+          console.error('Backend doctor fetch error:', err);
+          setDoctor(null);
+          setErrorMessage(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to load doctor availability.');
         }
       } finally {
         if (isMounted) setLoadingDoctor(false);
@@ -110,17 +106,8 @@ export const BookAppointmentScreen = () => {
         },
       });
     } catch (err) {
-      console.warn('Backend appointment creation returned error or offline:', err.message);
-      // Seamlessly navigate to confirmation with local demo booking state
-      navigate('/appointments/confirmation', {
-        state: {
-          appointment: {
-            id: `APT-${Math.floor(10000 + Math.random() * 90000)}`,
-            ...bookingPayload,
-            isOfflineDemo: true,
-          },
-        },
-      });
+      console.error('Backend appointment creation failed:', err);
+      setErrorMessage(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to create the appointment. Please try again.');
     } finally {
       setSubmitting(false);
     }

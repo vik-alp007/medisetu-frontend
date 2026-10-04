@@ -75,8 +75,9 @@ export const PatientDashboardScreen = () => {
 
   // Use real API data when available; mock data allowed ONLY for initial demo construction or explicit VITE_USE_MOCK_DATA
   const isMockMode = !isAuthenticated || import.meta.env.VITE_USE_MOCK_DATA === 'true';
-  const patientName = user?.name || dashboardData?.patient?.name || (isMockMode ? mockPatient.greetingName : 'Patient');
-  const upcomingApt = dashboardData?.upcoming_appointment || (isMockMode && !apiError ? mockUpcomingAppointment : null);
+  const backendUserName = [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim();
+  const patientName = backendUserName || user?.name || dashboardData?.patient?.name || (isMockMode ? mockPatient.greetingName : 'Patient');
+  const upcomingApt = dashboardData?.upcoming_appointment || (isMockMode ? mockUpcomingAppointment : null);
 
   const specialistIcons = {
     cardio: Heart,

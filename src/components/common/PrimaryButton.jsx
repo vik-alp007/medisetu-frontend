@@ -11,6 +11,7 @@ export const PrimaryButton = ({
   type = 'button',
   disabled = false,
   loading = false,
+  isLoading = false,
   fullWidth = false,
   size = 'md',
   icon: Icon,
@@ -28,15 +29,15 @@ export const PrimaryButton = ({
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled || loading}
+      disabled={disabled || loading || isLoading}
       className={`inline-flex items-center justify-center bg-medisetu-primary hover:bg-medisetu-primary-hover active:scale-[0.98] text-white font-semibold transition-all duration-150 shadow-xs ${
         fullWidth ? 'w-full' : ''
       } ${sizeStyles[size]} ${
-        disabled || loading ? 'opacity-60 cursor-not-allowed hover:bg-medisetu-primary active:scale-100' : ''
+        disabled || loading || isLoading ? 'opacity-60 cursor-not-allowed hover:bg-medisetu-primary active:scale-100' : ''
       } ${className}`}
       {...props}
     >
-      {loading ? (
+      {loading || isLoading ? (
         <>
           <Loader2 className="w-4 h-4 animate-spin text-white" />
           <span>Processing...</span>

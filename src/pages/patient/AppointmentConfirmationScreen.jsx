@@ -16,24 +16,24 @@ import OutlineButton from '../../components/common/OutlineButton';
 import StatusBadge from '../../components/common/StatusBadge';
 
 import { getDoctorAvatar } from '../../utils/doctorAvatar';
-import { mockUpcomingAppointment } from '../../data/mockData';
 
 export const AppointmentConfirmationScreen = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Retrieve passed appointment state or fallback to mock appointment
-  const aptData = location.state?.appointment || {
-    id: 'MS-APT-28941',
-    doctor_name: mockUpcomingAppointment.doctorName,
-    specialty: mockUpcomingAppointment.specialty,
-    date: mockUpcomingAppointment.date,
-    time_slot: mockUpcomingAppointment.time,
-    consultation_type: mockUpcomingAppointment.consultationType,
-    fee: mockUpcomingAppointment.fee,
-    patient_name: 'Vaibhav Agrawal',
-    hospital: 'Apollo Hospitals, New Delhi',
-  };
+  const aptData = location.state?.appointment;
+
+  if (!aptData) {
+    return (
+      <PatientLayout>
+        <div className="max-w-xl mx-auto py-16 text-center space-y-4">
+          <h1 className="text-2xl font-bold text-medisetu-navy">No Appointment Confirmation Found</h1>
+          <p className="text-sm text-medisetu-muted">Please create an appointment first.</p>
+          <PrimaryButton onClick={() => navigate('/doctors')}>Find a Doctor</PrimaryButton>
+        </div>
+      </PatientLayout>
+    );
+  }
 
   return (
     <PatientLayout>

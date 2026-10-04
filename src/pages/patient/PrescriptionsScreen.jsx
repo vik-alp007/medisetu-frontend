@@ -18,14 +18,15 @@ import OutlineButton from '../../components/common/OutlineButton';
 import SegmentedTabs from '../../components/common/SegmentedTabs';
 import EmptyState from '../../components/feedback/EmptyState';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
+import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 
 import { prescriptionService } from '../../services/prescriptionService';
-import { mockPrescriptions } from '../../data/mockData';
 import { getDoctorAvatar } from '../../utils/doctorAvatar';
 
 export const PrescriptionsScreen = () => {
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'history'
-  const [prescriptionData, setPrescriptionData] = useState(mockPrescriptions);
+  const [prescriptionData, setPrescriptionData] = useState({ active: null, history: [] });
+  const [loading, setLoading] = useState(true);
   const [apiNotice, setApiNotice] = useState(null);
   const [refillSuccess, setRefillSuccess] = useState(false);
 
@@ -50,9 +51,9 @@ export const PrescriptionsScreen = () => {
         }
       } catch (err) {
         if (isMounted) {
-          console.warn('Backend prescriptions API error or offline:', err.message);
-          setApiNotice('Live prescription server unavailable. Showing current medical regime.');
-          setPrescriptionData(mockPrescriptions);
+          console.error('Backend prescriptions API error:', err);
+          setApiNotice(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to load prescriptions from the hospital server.');
+          setPrescriptionData({ active: null, history: [] });
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -66,14 +67,11 @@ export const PrescriptionsScreen = () => {
   }, []);
 
   const handleRequestRefill = () => {
-    setRefillSuccess(true);
-    setTimeout(() => {
-      setRefillSuccess(false);
-    }, 3500);
+    setApiNotice('Prescription refill is not connected yet because the backend team has not provided a refill endpoint.');
   };
 
-  const activeRx = prescriptionData.active || mockPrescriptions.active;
-  const historyRx = prescriptionData.history || mockPrescriptions.history;
+  const activeRx = prescriptionData.active;
+  const historyRx = prescriptionData.history || [];
 
   const tabs = [
     { id: 'active', label: 'Active Prescription' },
@@ -106,7 +104,7 @@ export const PrescriptionsScreen = () => {
         )}
 
         {/* Refill Success Notification */}
-        {refillSuccess && (
+        {false && refillSuccess && (
           <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <div className="text-xs sm:text-sm">
@@ -123,6 +121,10 @@ export const PrescriptionsScreen = () => {
           onChange={(id) => setActiveTab(id)}
         />
 
+        {loading ? (
+          <div className="py-16 flex justify-center"><LoadingSpinner size="lg" /></div>
+        ) : (
+        <>
         {/* Mode 1: Active Prescription (Screen 14) */}
         {activeTab === 'active' && (
           <div className="space-y-4">
@@ -211,7 +213,7 @@ export const PrescriptionsScreen = () => {
                   </PrimaryButton>
                   <OutlineButton
                     fullWidth
-                    onClick={() => alert('Downloading official digital prescription PDF...')}
+                    onClick={() => setApiNotice('Prescription PDF download is not connected because the backend has not provided a document URL or download endpoint.')}
                     className="gap-2"
                   >
                     <Download className="w-4 h-4" /> Download PDF
@@ -254,7 +256,7 @@ export const PrescriptionsScreen = () => {
                     />
                     <OutlineButton
                       size="sm"
-                      onClick={() => alert(`Opening prescription ${item.id}`)}
+                      onClick={() => setApiNotice('Prescription detail view is not connected because the backend detail schema has not been provided.')}
                     >
                       View
                     </OutlineButton>
@@ -268,6 +270,8 @@ export const PrescriptionsScreen = () => {
               />
             )}
           </div>
+        )}
+        </>
         )}
       </motion.div>
     </PatientLayout>

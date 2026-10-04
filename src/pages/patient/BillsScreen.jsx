@@ -23,10 +23,9 @@ import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { billingService } from '../../services/billingService';
-import { mockBills } from '../../data/mockData';
 
 export const BillsScreen = () => {
-  const [billsData, setBillsData] = useState(mockBills);
+  const [billsData, setBillsData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiNotice, setApiNotice] = useState(null);
 
@@ -54,9 +53,9 @@ export const BillsScreen = () => {
         }
       } catch (err) {
         if (isMounted) {
-          console.warn('Backend bills API error or offline:', err.message);
-          setApiNotice('Live billing server unavailable. Showing your invoice summaries.');
-          setBillsData(mockBills);
+          console.error('Backend bills API error:', err);
+          setApiNotice(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to load bills from the hospital server.');
+          setBillsData(null);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -71,41 +70,12 @@ export const BillsScreen = () => {
 
   const handleProcessPayment = (e) => {
     e.preventDefault();
-    setProcessing(true);
-
-    setTimeout(() => {
-      setProcessing(false);
-      setPaymentSuccess(true);
-
-      // Update local state to reflect paid status
-      setBillsData((prev) => ({
-        ...prev,
-        outstandingAmount: 0,
-        dueStatus: 'Paid',
-        previousPayments: [
-          {
-            id: `pay-${Date.now()}`,
-            amount: prev.outstandingAmount || 1200,
-            date: 'Today - Just now',
-            status: 'Paid',
-          },
-          ...(prev.previousPayments || []),
-        ],
-      }));
-
-      setTimeout(() => {
-        setPaymentSuccess(false);
-        setShowPayModal(false);
-      }, 1800);
-    }, 1500);
+    setApiNotice('Online payment is not connected yet because the backend team has not provided a payment endpoint.');
   };
 
-  const outstanding = billsData.outstandingAmount ?? 1200;
-  const billDetails = billsData.billDetails || [
-    { item: 'Consultation Fee', amount: 800 },
-    { item: 'Lab Test (Complete Blood Count)', amount: 400 },
-  ];
-  const previousPayments = billsData.previousPayments || mockBills.previousPayments;
+  const outstanding = billsData?.outstandingAmount ?? 0;
+  const billDetails = billsData?.billDetails || [];
+  const previousPayments = billsData?.previousPayments || [];
 
   return (
     <PatientLayout>
@@ -132,6 +102,12 @@ export const BillsScreen = () => {
           />
         )}
 
+        {loading ? (
+          <div className="py-16 flex justify-center"><LoadingSpinner size="lg" /></div>
+        ) : !billsData ? (
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 text-center text-sm text-medisetu-muted">No billing data was returned by the hospital server.</div>
+        ) : (
+        <>
         {/* Outstanding Balance Hero Card (Figma Screen 16) */}
         {outstanding > 0 ? (
           <PaymentCard
@@ -195,6 +171,8 @@ export const BillsScreen = () => {
             ))}
           </div>
         </section>
+
+        </>)}
 
         {/* Payment Checkout Modal */}
         <AnimatePresence>

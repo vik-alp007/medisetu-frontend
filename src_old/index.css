@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-medisetu-bg text-medisetu-slate font-sans antialiased min-h-screen m-0 p-0 transition-colors duration-200;
+    background: radial-gradient(120% 100% at 50% 0%, #FFFFFF 0%, #F0F7FF 50%, #E6F0FA 100%);
+  }
+
+  .dark body,
+  html.dark body {
+    @apply bg-[#0B132B] text-slate-200;
+    background: radial-gradient(120% 100% at 50% 0%, #0F172A 0%, #0B132B 60%, #070D1F 100%);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-medisetu-navy font-bold tracking-tight transition-colors duration-200;
+  }
+
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    @apply text-slate-100;
+  }
+}
+
+@layer components {
+  /* Ambient canvas frame matching Figma */
+  .medisetu-canvas {
+    @apply max-w-[1440px] w-full mx-auto min-h-screen relative flex flex-col;
+  }
+
+  /* Inner desktop frame (1280px to 1440px) */
+  .medisetu-frame {
+    @apply max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* White elevated card */
+  .medisetu-card {
+    @apply bg-white dark:bg-[#1E293B] rounded-3xl border border-medisetu-border/70 dark:border-slate-800 shadow-card transition-all duration-200 text-medisetu-slate dark:text-slate-200;
+  }
+
+  .medisetu-card-hover {
+    @apply hover:shadow-card-hover hover:border-medisetu-primary/30 dark:hover:border-medisetu-primary/50;
+  }
+
+  /* Bottom navigation dock */
+  .medisetu-dock {
+    @apply fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-white/95 dark:bg-[#0F172A]/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-dock rounded-3xl px-6 py-2 flex items-center justify-around gap-6 sm:gap-10 transition-colors duration-200;
+  }
+
+  /* Primary action pill button */
+  .btn-primary {
+    @apply bg-medisetu-primary hover:bg-medisetu-primary-hover text-white font-semibold rounded-2xl px-6 py-3.5 transition-all duration-150 shadow-sm active:scale-[0.98] inline-flex items-center justify-center gap-2;
+  }
+
+  /* Danger / Emergency button */
+  .btn-danger {
+    @apply bg-medisetu-danger hover:bg-medisetu-danger-hover text-white font-semibold rounded-2xl px-6 py-3.5 transition-all duration-150 shadow-sm active:scale-[0.98] inline-flex items-center justify-center gap-2;
+  }
+
+  /* Form Input */
+  .input-field {
+    @apply w-full bg-white dark:bg-slate-800 border border-medisetu-border dark:border-slate-700 rounded-2xl px-4 py-3 text-medisetu-navy dark:text-white placeholder:text-medisetu-muted/70 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-medisetu-primary/20 focus:border-medisetu-primary transition-all;
+  }
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

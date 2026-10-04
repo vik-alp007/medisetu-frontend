@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import {
   User,
@@ -23,6 +24,8 @@ import AdminHeroIllustration from '../../assets/illustrations/AdminHeroIllustrat
  * Exact match for Admin Registration with Public Navbar and Feature Highlights
  */
 export const AdminLandingScreen = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     fullName: '',
     mobileNumber: '',
@@ -91,15 +94,8 @@ export const AdminLandingScreen = () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setSubmittedNotice(null);
-
-    // Frontend validation only — no guessed API payload
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmittedNotice(
-        'Admin registration form validated. Payload saved in local state pending backend schema.'
-      );
-    }, 600);
+    setSubmittedNotice('Opening the backend-connected admin registration form...');
+    setTimeout(() => navigate('/register/admin-form'), 300);
   };
 
   const valueProps = [

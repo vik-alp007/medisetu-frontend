@@ -23,7 +23,6 @@ import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { doctorService } from '../../services/doctorService';
-import { mockDoctors } from '../../data/mockData';
 import { DoctorClinicBanner } from '../../assets/illustrations/DoctorAvatars';
 import { getDoctorAvatar } from '../../utils/doctorAvatar';
 
@@ -53,13 +52,9 @@ export const DoctorProfileScreen = () => {
         }
       } catch (err) {
         if (isMounted) {
-          console.warn('Backend doctor details API error:', err.message);
-          // Fallback to local mock data
-          const found = mockDoctors.find((d) => String(d.id) === String(id)) || mockDoctors[0];
-          setDoctor(found);
-          if (found?.availableSlots?.length > 0) {
-            setSelectedSlot(found.availableSlots[0]);
-          }
+          console.error('Backend doctor details API error:', err);
+          setDoctor(null);
+          setErrorNotice(err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Unable to load this doctor from the hospital server.');
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -86,8 +81,12 @@ export const DoctorProfileScreen = () => {
   if (!doctor) {
     return (
       <PatientLayout>
-        <div className="py-16 text-center space-y-4">
-          <h2 className="text-xl font-bold text-medisetu-navy">Doctor Not Found</h2>
+        <div className="py-16 max-w-xl mx-auto space-y-4">
+          <ErrorAlert
+            title="Unable to Load Doctor"
+            message={errorNotice || 'Doctor information was not returned by the server.'}
+            onRetry={() => window.location.reload()}
+          />
           <PrimaryButton onClick={() => navigate('/doctors')}>
             Back to Doctors Directory
           </PrimaryButton>

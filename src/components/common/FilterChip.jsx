@@ -10,6 +10,7 @@ import { ChevronDown } from 'lucide-react';
 export const FilterChip = ({
   label,
   isActive = false,
+  isSelected,
   hasDropdown = true,
   onClick,
   count,
@@ -22,7 +23,7 @@ export const FilterChip = ({
       onClick={onClick}
       disabled={disabled}
       className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-150 select-none ${
-        isActive
+        (isSelected ?? isActive)
           ? 'bg-medisetu-primary text-white shadow-xs'
           : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-medisetu-slate dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'} ${className}`}
@@ -31,7 +32,7 @@ export const FilterChip = ({
       {count !== undefined && (
         <span
           className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-            isActive ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+            (isSelected ?? isActive) ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
           }`}
         >
           {count}
@@ -40,7 +41,7 @@ export const FilterChip = ({
       {hasDropdown && (
         <ChevronDown
           className={`w-3.5 h-3.5 transition-transform ${
-            isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500'
+            (isSelected ?? isActive) ? 'text-white' : 'text-slate-400 dark:text-slate-500'
           }`}
         />
       )}
