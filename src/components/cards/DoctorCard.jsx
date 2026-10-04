@@ -14,6 +14,7 @@ export const DoctorCard = ({
   reviewsCount,
   experience,
   consultationFee,
+  avatar,
   avatarUrl,
   isTopRated = false,
   onSelect,
@@ -29,7 +30,9 @@ export const DoctorCard = ({
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden bg-blue-100 flex-shrink-0 border-2 border-white shadow-xs">
-          {avatarUrl ? (
+          {avatar ? (
+            React.isValidElement(avatar) ? avatar : <img src={avatar} alt={name} className="w-full h-full object-cover" />
+          ) : avatarUrl ? (
             <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-medisetu-primary font-bold text-lg">

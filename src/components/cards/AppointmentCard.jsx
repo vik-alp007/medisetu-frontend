@@ -12,6 +12,7 @@ export const AppointmentCard = ({
   date,
   time,
   consultationType,
+  avatar,
   avatarUrl,
   onClick,
   className = '',
@@ -23,7 +24,9 @@ export const AppointmentCard = ({
     >
       <div className="flex items-center gap-3.5">
         <div className="w-12 h-12 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center flex-shrink-0 border-2 border-white shadow-xs">
-          {avatarUrl ? (
+          {avatar ? (
+            React.isValidElement(avatar) ? avatar : <img src={avatar} alt={doctorName} className="w-full h-full object-cover" />
+          ) : avatarUrl ? (
             <img src={avatarUrl} alt={doctorName} className="w-full h-full object-cover" />
           ) : (
             <span className="text-medisetu-primary font-bold text-sm">

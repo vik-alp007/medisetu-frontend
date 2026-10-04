@@ -15,6 +15,13 @@ import ComponentPreviewScreen from './pages/public/ComponentPreviewScreen';
 import DoctorDashboardPlaceholder from './pages/placeholders/DoctorDashboardPlaceholder';
 import AdminDashboardPlaceholder from './pages/placeholders/AdminDashboardPlaceholder';
 
+// Patient Core Screens (Stage 1)
+import PatientDashboardScreen from './pages/patient/PatientDashboardScreen';
+import FindDoctorsScreen from './pages/patient/FindDoctorsScreen';
+import DoctorProfileScreen from './pages/patient/DoctorProfileScreen';
+import BookAppointmentScreen from './pages/patient/BookAppointmentScreen';
+import AppointmentConfirmationScreen from './pages/patient/AppointmentConfirmationScreen';
+
 function App() {
   return (
     <AuthProvider>
@@ -43,6 +50,13 @@ function App() {
 
           {/* Component Showcase Gallery */}
           <Route path="/components" element={<ComponentPreviewScreen />} />
+
+          {/* Patient Core Routes (Stage 1) */}
+          <Route path="/dashboard" element={<PatientDashboardScreen />} />
+          <Route path="/doctors" element={<FindDoctorsScreen />} />
+          <Route path="/doctors/:id" element={<DoctorProfileScreen />} />
+          <Route path="/appointments/book/:doctorId" element={<BookAppointmentScreen />} />
+          <Route path="/appointments/confirmation" element={<AppointmentConfirmationScreen />} />
 
           {/* Backend Placeholder Dashboards */}
           <Route path="/dashboard/doctor" element={<DoctorDashboardPlaceholder />} />
