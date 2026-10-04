@@ -10,6 +10,7 @@ export const EmptyState = ({
   icon: Icon = Inbox,
   title = 'No records found',
   message = 'There is currently no data to display.',
+  description, // alias of `message` - several screens pass this name
   actionText,
   onAction,
   className = '',
@@ -27,7 +28,7 @@ export const EmptyState = ({
       </h3>
 
       <p className="text-xs sm:text-sm text-medisetu-muted dark:text-slate-400 max-w-sm mt-1 mb-5 leading-relaxed">
-        {message}
+        {description ?? message}
       </p>
 
       {actionText && onAction && (

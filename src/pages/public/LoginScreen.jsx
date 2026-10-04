@@ -147,13 +147,7 @@ export const LoginScreen = () => {
         password: formData.password,
       };
 
-      console.log('MediSetu login request:', {
-        username: payload.username,
-      });
-
       const response = await authService.login(payload);
-
-      console.log('MediSetu login successful');
 
       // Backend response:
       //

@@ -10,6 +10,7 @@ export const ErrorAlert = ({
   title = 'Something went wrong',
   message,
   onRetry,
+  onDismiss,
   className = '',
 }) => {
   return (
@@ -40,6 +41,17 @@ export const ErrorAlert = ({
           </button>
         )}
       </div>
+
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="text-red-400 hover:text-red-600 text-lg leading-none px-1"
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 };

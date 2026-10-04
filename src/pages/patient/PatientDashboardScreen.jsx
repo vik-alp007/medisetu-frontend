@@ -25,63 +25,24 @@ import ErrorAlert from '../../components/feedback/ErrorAlert';
 
 import { useAuth } from '../../context/AuthContext';
 import { dashboardService } from '../../services/dashboardService';
-import { doctorService } from '../../services/doctorService';
-import { PatientAvatarIcon, getDoctorAvatar } from '../../utils/doctorAvatar';
-
-const formatAppointmentDate = (date) => {
-  if (!date) return 'Date not provided';
-
-  const parsed = new Date(date);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return String(date);
-  }
-
-  return parsed.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-};
-
-const formatAppointmentTime = (time) => {
-  if (!time) return 'Time not provided';
-
-  const [hours, minutes] = String(time).split(':');
-
-  if (hours === undefined || minutes === undefined) {
-    return String(time);
-  }
-
-  const hourNumber = Number(hours);
-
-  if (Number.isNaN(hourNumber)) {
-    return String(time);
-  }
-
-  const suffix = hourNumber >= 12 ? 'PM' : 'AM';
-  const displayHour = hourNumber % 12 || 12;
-
-  return `${displayHour}:${minutes} ${suffix}`;
-};
-
-const getDoctorName = (doctor) => {
-  const firstName = doctor?.user?.first_name || '';
-  const lastName = doctor?.user?.last_name || '';
-
-  const fullName = `${firstName} ${lastName}`.trim();
-
-  return fullName || doctor?.user?.username || 'Doctor';
-};
+import { PatientAvatarIcon } from '../../utils/doctorAvatar';
+import { getGreeting } from '../../utils/format';
+import { appointmentService } from '../../services/appointmentService';
+import {
+  asList,
+  normalizeAppointment,
+  sortAppointmentsAsc,
+} from '../../services/adapters/commonAdapter';
+import { toDateKey, formatDate, formatTime } from '../../utils/format';
 
 export const PatientDashboardScreen = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
-  const [doctors, setDoctors] = useState([]);
+  const [appointments, setAppointments] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -96,22 +57,25 @@ export const PatientDashboardScreen = () => {
         setLoading(true);
         setApiError(null);
 
-        const [dashboardResponse, doctorsResponse] = await Promise.all([
+        // Summary counts come from the dashboard endpoint; appointment DETAILS
+        // come from the real appointments endpoint (the dashboard only has counts).
+        const [dashboardResult, appointmentsResult] = await Promise.allSettled([
           dashboardService.getPatientDashboard(),
-          doctorService.getDoctors(),
+          appointmentService.getAppointments(),
         ]);
 
         if (!isMounted) return;
 
-        setDashboardData(dashboardResponse);
+        if (dashboardResult.status === 'rejected') {
+          throw dashboardResult.reason;
+        }
 
-        const normalizedDoctors = Array.isArray(doctorsResponse)
-          ? doctorsResponse
-          : Array.isArray(doctorsResponse?.results)
-          ? doctorsResponse.results
-          : [];
-
-        setDoctors(normalizedDoctors);
+        setDashboardData(dashboardResult.value);
+        setAppointments(
+          appointmentsResult.status === 'fulfilled'
+            ? sortAppointmentsAsc(asList(appointmentsResult.value).map(normalizeAppointment))
+            : []
+        );
       } catch (error) {
         if (!isMounted) return;
 
@@ -125,7 +89,7 @@ export const PatientDashboardScreen = () => {
         );
 
         setDashboardData(null);
-        setDoctors([]);
+        setAppointments([]);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -163,6 +127,17 @@ export const PatientDashboardScreen = () => {
     ? dashboardData.recent_prescriptions.length
     : 0;
 
+  const nextAppointment = useMemo(() => {
+    const today = toDateKey();
+    return (
+      appointments.find(
+        (a) =>
+          !['CANCELLED', 'COMPLETED'].includes(a.status) &&
+          (!a.date || a.date >= today)
+      ) || null
+    );
+  }, [appointments]);
+
   const specialistCategories = useMemo(() => {
     const categories = [
       {
@@ -191,8 +166,6 @@ export const PatientDashboardScreen = () => {
     return categories;
   }, []);
 
-  const hasDoctors = doctors.length > 0;
-
   return (
     <PatientLayout>
       <motion.div
@@ -204,7 +177,7 @@ export const PatientDashboardScreen = () => {
         {/* Header */}
         <TopHeader
           greetingName={patientName}
-          greetingTime="Good Morning,"
+          greetingTime={getGreeting()}
           subtitle="How are you feeling today?"
           showNotification={true}
           hasUnreadNotification={false}
@@ -307,7 +280,18 @@ export const PatientDashboardScreen = () => {
                   <Calendar className="w-5 h-5 text-medisetu-primary dark:text-blue-400" />
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
+                  {nextAppointment && (
+                    <div className="mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                      <p className="text-xs text-medisetu-muted dark:text-slate-400">Next appointment</p>
+                      <p className="text-sm font-bold text-medisetu-navy dark:text-white truncate">
+                        {nextAppointment.doctorName}
+                      </p>
+                      <p className="text-xs font-medium text-medisetu-primary dark:text-blue-400 mt-0.5">
+                        {formatDate(nextAppointment.date)} · {formatTime(nextAppointment.time)}
+                      </p>
+                    </div>
+                  )}
                   <p className="text-sm font-bold text-medisetu-navy dark:text-white">
                     You have {upcomingAppointmentCount}{' '}
                     {upcomingAppointmentCount === 1
@@ -315,17 +299,12 @@ export const PatientDashboardScreen = () => {
                       : 'upcoming appointments'}
                   </p>
 
-                  <p className="text-xs text-medisetu-muted dark:text-slate-400 mt-1">
-                    Open your appointments to view the available appointment
-                    details.
-                  </p>
-
                   <button
                     type="button"
-                    onClick={() => navigate('/doctors')}
-                    className="mt-3 text-xs font-semibold text-medisetu-primary hover:underline"
+                    onClick={() => navigate('/appointments')}
+                    className="mt-2 text-xs font-semibold text-medisetu-primary hover:underline"
                   >
-                    Book another appointment →
+                    View all appointments →
                   </button>
                 </div>
               </div>

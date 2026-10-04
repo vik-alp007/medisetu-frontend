@@ -9,7 +9,7 @@ import { Home, Calendar, FileText, CreditCard, User } from 'lucide-react';
 export const BottomDock = () => {
   const navItems = [
     { label: 'Home', to: '/dashboard', icon: Home },
-    { label: 'Appointments', to: '/doctors', icon: Calendar },
+    { label: 'Appointments', to: '/appointments', icon: Calendar },
     { label: 'Records', to: '/records', icon: FileText },
     { label: 'Bills', to: '/bills', icon: CreditCard },
     { label: 'Profile', to: '/profile', icon: User },

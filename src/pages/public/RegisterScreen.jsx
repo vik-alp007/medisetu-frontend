@@ -474,19 +474,8 @@ export const RegisterScreen = ({ initialRole = 'patient' }) => {
     try {
       const payload = buildRegistrationPayload();
 
-      console.log(
-        'MediSetu registration payload:',
-        payload
-      );
-
       // REAL BACKEND CALL
-      const response =
-        await authService.register(payload);
-
-      console.log(
-        'Registration successful:',
-        response
-      );
+      await authService.register(payload);
 
       setSubmittedNotice({
         type: 'success',

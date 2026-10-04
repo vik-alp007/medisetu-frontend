@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter,
   Routes,
@@ -6,7 +6,8 @@ import {
   Navigate,
 } from 'react-router-dom';
 
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
 
 import BareLayout from './layouts/BareLayout';
@@ -17,11 +18,18 @@ import OnboardingScreen from './pages/public/OnboardingScreen';
 import RegisterScreen from './pages/public/RegisterScreen';
 import AdminLandingScreen from './pages/public/AdminLandingScreen';
 import LoginScreen from './pages/public/LoginScreen';
-import ComponentPreviewScreen from './pages/public/ComponentPreviewScreen';
+const ComponentPreviewScreen = lazy(() => import('./pages/public/ComponentPreviewScreen'));
 
-// Placeholder dashboards
-import DoctorDashboardPlaceholder from './pages/placeholders/DoctorDashboardPlaceholder';
-import AdminDashboardPlaceholder from './pages/placeholders/AdminDashboardPlaceholder';
+// Staff dashboards
+// Lazy-loaded so patients never download staff dashboard code.
+const DoctorDashboardScreen = lazy(() => import('./pages/doctor/DoctorDashboardScreen'));
+const AdminDashboardScreen = lazy(() => import('./pages/admin/AdminDashboardScreen'));
+
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[#F4F9FF] dark:bg-[#0B132B] text-sm text-slate-500">
+    Loading...
+  </div>
+);
 
 // Patient Screens
 import PatientDashboardScreen from './pages/patient/PatientDashboardScreen';
@@ -34,66 +42,14 @@ import PrescriptionsScreen from './pages/patient/PrescriptionsScreen';
 import EmergencyScreen from './pages/patient/EmergencyScreen';
 import BillsScreen from './pages/patient/BillsScreen';
 import PatientProfileScreen from './pages/patient/PatientProfileScreen';
-
-/*
-|--------------------------------------------------------------------------
-| Protected Route
-|--------------------------------------------------------------------------
-*/
-
-const ProtectedRoute = ({ children, allowedRoles }) => {
-  const {
-    isAuthenticated,
-    isLoading,
-    role,
-  } = useAuth();
-
-  // Wait until AuthContext finishes restoring the session.
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-            Checking your session...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // No valid access token.
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Role-based protection.
-  if (
-    allowedRoles &&
-    allowedRoles.length > 0 &&
-    !allowedRoles.includes(String(role).toUpperCase())
-  ) {
-    const normalizedRole = String(role).toUpperCase();
-
-    if (normalizedRole === 'DOCTOR') {
-      return <Navigate to="/dashboard/doctor" replace />;
-    }
-
-    if (normalizedRole === 'ADMIN') {
-      return <Navigate to="/dashboard/admin" replace />;
-    }
-
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return children;
-};
+import PatientAppointmentsScreen from './pages/patient/PatientAppointmentsScreen';
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
 
             {/* =========================================================
@@ -173,6 +129,16 @@ function App() {
               }
             />
 
+            {/* Appointments list - target of the bottom-nav "Appointments" tab */}
+            <Route
+              path="/appointments"
+              element={
+                <ProtectedRoute allowedRoles={['PATIENT']}>
+                  <PatientAppointmentsScreen />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/appointments/book/:doctorId"
               element={
@@ -235,14 +201,14 @@ function App() {
             />
 
             {/* =========================================================
-                DOCTOR / ADMIN PLACEHOLDERS
+                DOCTOR / ADMIN DASHBOARDS
             ========================================================= */}
 
             <Route
               path="/dashboard/doctor"
               element={
                 <ProtectedRoute allowedRoles={['DOCTOR']}>
-                  <DoctorDashboardPlaceholder />
+                  <DoctorDashboardScreen />
                 </ProtectedRoute>
               }
             />
@@ -251,7 +217,7 @@ function App() {
               path="/dashboard/admin"
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
-                  <AdminDashboardPlaceholder />
+                  <AdminDashboardScreen />
                 </ProtectedRoute>
               }
             />
@@ -266,6 +232,7 @@ function App() {
             />
 
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>

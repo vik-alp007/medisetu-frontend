@@ -17,6 +17,12 @@ import { doctorService } from '../../services/doctorService';
 import { appointmentService } from '../../services/appointmentService';
 import { getDoctorAvatar } from '../../utils/doctorAvatar';
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 const formatAppointmentDate = (day, month, year) => {
   const monthMap = {
     January: '01',
@@ -148,10 +154,12 @@ export const BookAppointmentScreen = () => {
   const [consultationType, setConsultationType] =
     useState('in-person');
 
-  const [selectedDay, setSelectedDay] = useState(15);
-  const [selectedMonth, setSelectedMonth] =
-    useState('October');
-  const [selectedYear, setSelectedYear] = useState(2026);
+  // Default to today (was hardcoded to 15 October 2026).
+  const [selectedDay, setSelectedDay] = useState(() => new Date().getDate());
+  const [selectedMonth, setSelectedMonth] = useState(
+    () => MONTH_NAMES[new Date().getMonth()]
+  );
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   const [selectedSlot, setSelectedSlot] =
     useState(preselectedSlot);
@@ -219,6 +227,10 @@ export const BookAppointmentScreen = () => {
     };
   }, [doctorId, preselectedSlot]);
 
+  const workingDays = Array.isArray(doctor?.availableDays)
+    ? doctor.availableDays
+    : [];
+
   const availableSlots = Array.isArray(
     doctor?.availableSlots
   )
@@ -260,6 +272,23 @@ export const BookAppointmentScreen = () => {
 
     if (!appointmentDate) {
       setErrorMessage('Please select a valid appointment date.');
+      return;
+    }
+
+    const chosen = new Date(`${appointmentDate}T00:00:00`);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    if (chosen < todayStart) {
+      setErrorMessage('Appointment date cannot be in the past.');
+      return;
+    }
+    if (
+      workingDays.length > 0 &&
+      !workingDays.includes(WEEKDAY_SHORT[chosen.getDay()])
+    ) {
+      setErrorMessage(
+        `This doctor is not available on that day. Available: ${workingDays.join(', ')}.`
+      );
       return;
     }
 
@@ -444,19 +473,24 @@ export const BookAppointmentScreen = () => {
             </h3>
 
             <CalendarWidget
-              selectedDay={selectedDay}
+              selectedDate={selectedDay}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
-              onDateChange={({
-                day,
-                month,
-                year,
-              }) => {
+              isDateDisabled={(date) =>
+                workingDays.length > 0 &&
+                !workingDays.includes(WEEKDAY_SHORT[date.getDay()])
+              }
+              onSelectDate={(day, month, year) => {
                 setSelectedDay(day);
                 setSelectedMonth(month);
                 setSelectedYear(year);
               }}
             />
+            {workingDays.length > 0 && (
+              <p className="mt-3 text-xs text-medisetu-muted">
+                Doctor available: {workingDays.join(', ')}
+              </p>
+            )}
           </div>
 
           {/* Time slots */}

@@ -16,6 +16,7 @@ import TopHeader from '../../components/navigation/TopHeader';
 import EmptyState from '../../components/feedback/EmptyState';
 import LoadingSpinner from '../../components/feedback/LoadingSpinner';
 import ErrorAlert from '../../components/feedback/ErrorAlert';
+import ReportUploadCard from '../../components/records/ReportUploadCard';
 
 import { recordService } from '../../services/recordService';
 
@@ -271,6 +272,8 @@ export const MedicalRecordsScreen = () => {
             onRetry={fetchRecords}
           />
         )}
+
+        <ReportUploadCard onUploaded={() => fetchRecords()} />
 
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />

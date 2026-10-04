@@ -1,29 +1,40 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+const months = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/**
+ * @param isDateDisabled optional (Date) => boolean. Past dates are always disabled.
+ */
 export const CalendarWidget = ({
   selectedDate,
   selectedMonth,
   selectedYear,
   onSelectDate,
+  isDateDisabled,
   className = '',
 }) => {
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(() => {
+    const idx = selectedMonth ? months.indexOf(selectedMonth) : -1;
+    return idx >= 0 ? idx : new Date().getMonth();
+  });
+  const [currentYear, setCurrentYear] = useState(() => selectedYear || new Date().getFullYear());
 
-  const initialMonth = selectedMonth ? months.indexOf(selectedMonth) : new Date().getMonth();
-  const initialYear = selectedYear || new Date().getFullYear();
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(initialMonth >= 0 ? initialMonth : new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(initialYear);
-
+  // Follow the parent's selection (e.g. when it changes programmatically).
   useEffect(() => {
     if (selectedMonth && months.includes(selectedMonth)) {
       setCurrentMonthIndex(months.indexOf(selectedMonth));
     }
     if (selectedYear) setCurrentYear(selectedYear);
   }, [selectedMonth, selectedYear]);
+
+  const todayStart = useMemo(() => {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  }, []);
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -83,16 +94,27 @@ export const CalendarWidget = ({
 
       <div className="grid grid-cols-7 gap-1 text-center">
         {calendarCells.map((cell, index) => {
-          const isSelected = cell.isCurrentMonth && cell.day === selectedDate && currentMonthIndex === months.indexOf(selectedMonth);
+          const cellDate = new Date(currentYear, currentMonthIndex, cell.day);
+          const disabledByRule =
+            cell.isCurrentMonth &&
+            (cellDate < todayStart || (isDateDisabled ? isDateDisabled(cellDate) : false));
+          const isSelected =
+            cell.isCurrentMonth &&
+            cell.day === selectedDate &&
+            currentMonthIndex === months.indexOf(selectedMonth) &&
+            currentYear === selectedYear;
           return (
             <button
               key={`${currentYear}-${currentMonthIndex}-${index}`}
               type="button"
-              disabled={!cell.isCurrentMonth}
-              onClick={() => cell.isCurrentMonth && onSelectDate?.(cell.day, months[currentMonthIndex], currentYear)}
+              disabled={!cell.isCurrentMonth || disabledByRule}
+              aria-pressed={isSelected}
+              onClick={() => cell.isCurrentMonth && !disabledByRule && onSelectDate?.(cell.day, months[currentMonthIndex], currentYear)}
               className={`w-8 h-8 sm:w-9 sm:h-9 mx-auto rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all duration-150 ${
                 isSelected
                   ? 'bg-medisetu-primary text-white font-bold shadow-xs'
+                  : cell.isCurrentMonth && disabledByRule
+                    ? 'text-slate-300 dark:text-slate-600 line-through cursor-not-allowed'
                   : cell.isCurrentMonth
                     ? 'text-medisetu-navy dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-medisetu-primary dark:hover:text-blue-400'
                     : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'

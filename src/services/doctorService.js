@@ -1,4 +1,8 @@
 import apiClient from './api';
+import {
+  normalizeDoctor,
+  normalizeDoctorList,
+} from './adapters/doctorAdapter';
 
 /**
  * Doctor Service
@@ -9,7 +13,10 @@ export const doctorService = {
   // Optional query params: { specialty, availability, gender, experience, fee }
   getDoctors: async (params = {}) => {
     const response = await apiClient.get('/api/doctors/', { params });
-    return response.data;
+    // Adapter keeps raw backend fields and adds derived UI fields.
+    return Array.isArray(response.data)
+      ? normalizeDoctorList(response.data)
+      : { ...response.data, results: normalizeDoctorList(response.data) };
   },
 
   // GET /api/doctors/my-profile/
@@ -35,6 +42,6 @@ export const doctorService = {
   // GET /api/doctors/:id/
   getDoctorById: async (id) => {
     const response = await apiClient.get(`/api/doctors/${id}/`);
-    return response.data;
+    return normalizeDoctor(response.data);
   },
 };
