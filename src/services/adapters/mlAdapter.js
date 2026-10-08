@@ -22,19 +22,44 @@ export const adaptPrediction = (raw, { isDemo = false } = {}) => {
     throw new Error('The prediction service returned an unreadable response.');
   }
 
-  const disease =
-    raw.disease ?? raw.prediction ?? raw.predicted_disease ?? raw.label ?? null;
+  const pred =
+    raw.prediction && typeof raw.prediction === 'object'
+      ? raw.prediction
+      : raw;
 
-  let confidence = raw.confidence ?? raw.probability ?? raw.score ?? null;
-  if (confidence !== null && !Number.isNaN(Number(confidence))) {
-    confidence = Number(confidence);
-    if (confidence > 1) confidence = confidence / 100; // tolerate 0-100 percentages
-    confidence = Math.min(1, Math.max(0, confidence));
-  } else {
-    confidence = null;
+  const disease =
+    pred.disease ??
+    pred.prediction ??
+    pred.predicted_disease ??
+    pred.label ??
+    raw.disease ??
+    null;
+
+  const rawConf =
+    pred.confidence ??
+    pred.probability ??
+    pred.score ??
+    raw.confidence ??
+    null;
+
+  let confidence = null;
+  if (rawConf !== null && rawConf !== undefined) {
+    const cleaned =
+      typeof rawConf === 'string' ? rawConf.replace('%', '').trim() : rawConf;
+    const num = Number(cleaned);
+    if (!Number.isNaN(num)) {
+      confidence = num > 1 ? num / 100 : num;
+      confidence = Math.min(1, Math.max(0, confidence));
+    }
   }
 
-  const recs = raw.recommendations ?? raw.advice ?? raw.suggestions ?? [];
+  const recs =
+    pred.recommendation ??
+    pred.recommendations ??
+    raw.recommendations ??
+    raw.advice ??
+    raw.suggestions ??
+    [];
 
   return {
     disease: disease ? String(disease) : null,

@@ -47,3 +47,6 @@ export { default as ErrorAlert } from './feedback/ErrorAlert';
 export { default as EmptyState } from './feedback/EmptyState';
 export { default as SuccessCheckmark } from './feedback/SuccessCheckmark';
 export { default as AlertBanner } from './feedback/AlertBanner';
+
+// ML Components
+export { default as ReportUploadModal } from './ml/ReportUploadModal';
